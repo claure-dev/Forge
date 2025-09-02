@@ -92,26 +92,51 @@ class ForgeRAG:
             logger.error(f"Error indexing directory {directory_path}: {e}")
             return 0
     
-    def search(self, query: str, k: int = 5) -> List[Dict[str, Any]]:
-        """Search for similar documents"""
+    def search(self, query: str, k: int = 5, boost_inventory: bool = True) -> List[Dict[str, Any]]:
+        """Search for similar documents with enhanced source attribution"""
         try:
             if not self.vectorstore:
                 return []
             
             # Use LangChain's similarity_search_with_score for proper similarity handling
-            results = self.vectorstore.similarity_search_with_score(query, k=k)
+            # Search for more results initially to allow for inventory boosting
+            search_k = k * 3 if boost_inventory else k
+            results = self.vectorstore.similarity_search_with_score(query, k=search_k)
             
             documents = []
+            inventory_docs = []
+            other_docs = []
+            
             for doc, score in results:
                 # Convert cosine distance (0-2) to similarity (0-1), where lower distance = higher similarity
                 similarity = max(0.0, 1.0 - (score / 2.0))  # Normalize distance to similarity
-                documents.append({
+                
+                # Enhanced source attribution
+                source_path = doc.metadata.get('source', 'unknown')
+                filename = Path(source_path).name
+                
+                doc_info = {
                     "content": doc.page_content[:300] + "..." if len(doc.page_content) > 300 else doc.page_content,
-                    "filename": Path(doc.metadata.get('source', 'unknown')).name,
+                    "filename": filename,
+                    "source_path": source_path,
                     "similarity": similarity,
                     "metadata": doc.metadata,
-                    "full_content": doc.page_content
-                })
+                    "full_content": doc.page_content,
+                    "citation": f"[Source: {filename}]"
+                }
+                
+                # Boost inventory/hardware documents
+                if boost_inventory and ('/Inventory/' in source_path or '/Hardware/' in source_path):
+                    inventory_docs.append(doc_info)
+                else:
+                    other_docs.append(doc_info)
+            
+            # Combine results: prioritize inventory docs, then fill with others
+            if boost_inventory:
+                documents = inventory_docs[:k//2] + other_docs[:k-len(inventory_docs[:k//2])]
+                documents = documents[:k]  # Ensure we don't exceed requested count
+            else:
+                documents = [doc_info for doc_info in documents][:k]
             
             logger.info(f"Search '{query}' returned {len(documents)} results")
             return documents
@@ -166,9 +191,44 @@ def rebuild_index(directory_path: str) -> int:
     return rag.load_and_index_directory(directory_path)
 
 def search_documents(query: str, limit: int = 5) -> List[Dict[str, Any]]:
-    """Search documents using RAG"""
+    """Search documents using RAG with source attribution"""
     rag = get_rag_instance()
     return rag.search(query, k=limit)
+
+def verify_claim_in_document(filename: str, claim_text: str) -> Dict[str, Any]:
+    """Verify if a specific claim exists in a document"""
+    try:
+        rag = get_rag_instance()
+        # Search specifically for the claim
+        results = rag.search(f"{claim_text} {filename}", k=10)
+        
+        # Filter results to only this specific file
+        matching_results = [r for r in results if r['filename'].lower() == filename.lower()]
+        
+        if matching_results:
+            best_match = matching_results[0]
+            return {
+                "found": True,
+                "source": filename,
+                "excerpt": best_match['content'],
+                "confidence": best_match['similarity']
+            }
+        else:
+            return {
+                "found": False,
+                "source": filename,
+                "excerpt": None,
+                "confidence": 0.0
+            }
+    except Exception as e:
+        logger.error(f"Error verifying claim in {filename}: {e}")
+        return {
+            "found": False,
+            "source": filename,
+            "excerpt": None,
+            "confidence": 0.0,
+            "error": str(e)
+        }
 
 def get_all_documents() -> List[Dict[str, Any]]:
     """Get all documents"""

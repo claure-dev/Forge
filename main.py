@@ -97,14 +97,19 @@ def build_conversation_context(session_id: str, new_message: str) -> str:
         context_parts.append("=" * 30)
         context_parts.append("")
     
-    # Add instructions for the AI
-    context_parts.append("INSTRUCTIONS:")
-    context_parts.append("- Use the knowledge from the vault documents above to inform your response")
-    context_parts.append("- Reference specific documents when relevant (e.g., 'According to your Omada Controller.md...')")
-    context_parts.append("- If the question relates to information in your vault, prioritize that knowledge over general knowledge")
-    context_parts.append("- Pay close attention to document filenames - they indicate what the content is about")
-    context_parts.append("- Look for exact command syntax and procedures in the document content")
-    context_parts.append("- Maintain conversation context while incorporating vault knowledge")
+    # Add enhanced instructions for citation honesty
+    context_parts.append("CRITICAL INSTRUCTIONS:")
+    context_parts.append("- BEFORE making ANY specific claims about hardware specs, software versions, or project details:")
+    context_parts.append("  1. State which document you're referencing: [Source: filename.md]")
+    context_parts.append("  2. If you cannot find the information, explicitly say 'NOT DOCUMENTED IN VAULT'")
+    context_parts.append("  3. NEVER guess or make up information - be precise about what exists vs doesn't exist")
+    context_parts.append("- Format responses with clear sections:")
+    context_parts.append("  ## From Your Vault:")
+    context_parts.append("  - [Claim]: [Source: filename.md] OR [NOT DOCUMENTED]")
+    context_parts.append("  ## Analysis/Recommendations:")
+    context_parts.append("  [External knowledge and recommendations here]")
+    context_parts.append("- If referencing vault content, quote the exact relevant text")
+    context_parts.append("- Distinguish clearly between documented facts and inferences")
     context_parts.append("")
     
     # Add the new message
