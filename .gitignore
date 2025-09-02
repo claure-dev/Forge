@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+
+# ChromaDB - commented out to track database locally
+# chroma_db/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local config
+.env
+*.local
+
+# Screenshots (optional - comment out if you want to track them)
+*.png
+*.jpg
+*.jpeg
