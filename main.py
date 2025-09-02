@@ -50,8 +50,57 @@ class SearchRequest(BaseModel):
 class VaultRequest(BaseModel):
     vault_directory: str
 
+def perform_document_analysis(relevant_docs: List[Dict], query: str) -> str:
+    """First pass: Analyze documents for patterns, relationships, and gaps"""
+    if not relevant_docs:
+        return ""
+        
+    analysis_parts = []
+    analysis_parts.append("=== DOCUMENT ANALYSIS CONTEXT ===")
+    
+    # Extract document types and relationships
+    doc_types = {}
+    projects = []
+    hardware = []
+    services = []
+    
+    for doc in relevant_docs:
+        filename = doc.get('filename', '')
+        full_content = doc.get('full_content', '')
+        
+        # Classify document types
+        if 'type: project' in full_content or '/Projects/' in doc.get('source_path', ''):
+            projects.append(filename)
+            doc_types[filename] = 'project'
+        elif 'type: hardware' in full_content or '/Hardware/' in doc.get('source_path', ''):
+            hardware.append(filename)
+            doc_types[filename] = 'hardware'
+        elif '/Services/' in doc.get('source_path', ''):
+            services.append(filename)
+            doc_types[filename] = 'service'
+        else:
+            doc_types[filename] = 'other'
+    
+    # Document relationship analysis
+    if len(doc_types) > 1:
+        analysis_parts.append(f"📊 Cross-referenced: {len(hardware)} hardware, {len(projects)} projects, {len(services)} services")
+        
+        # Look for missing connections
+        if projects and hardware:
+            analysis_parts.append("🔗 Infrastructure relationship detected - can analyze deployment patterns")
+        if hardware and not services:
+            analysis_parts.append("⚠️ Hardware documented but related services may need documentation")
+    
+    # Gap analysis for common infrastructure patterns
+    query_lower = query.lower()
+    if any(term in query_lower for term in ['gap', 'missing', 'need', 'should have']):
+        analysis_parts.append("🔍 Gap analysis requested - will examine common infrastructure patterns")
+    
+    analysis_parts.append("")
+    return "\n".join(analysis_parts)
+
 def build_conversation_context(session_id: str, new_message: str) -> str:
-    """Build conversation context with RAG-enhanced knowledge retrieval"""
+    """Build conversation context with multi-pass RAG-enhanced knowledge retrieval"""
     if session_id not in conversations:
         conversations[session_id] = []
     
@@ -68,10 +117,15 @@ def build_conversation_context(session_id: str, new_message: str) -> str:
         except Exception as e:
             logger.error(f"Error retrieving relevant documents: {e}")
     
-    # Build context string
+    # Build context string with multi-pass analysis
     context_parts = []
     
-    # Add relevant knowledge vault documents first
+    # First pass: Document analysis for patterns and relationships
+    analysis_context = perform_document_analysis(relevant_docs, new_message)
+    if analysis_context:
+        context_parts.append(analysis_context)
+    
+    # Add relevant knowledge vault documents 
     if relevant_docs:
         context_parts.append("=== RELEVANT KNOWLEDGE FROM YOUR VAULT ===")
         for doc in relevant_docs:
@@ -97,19 +151,24 @@ def build_conversation_context(session_id: str, new_message: str) -> str:
         context_parts.append("=" * 30)
         context_parts.append("")
     
-    # Add enhanced instructions for citation honesty
+    # Enhanced instructions for frontier-model-like responses
     context_parts.append("CRITICAL INSTRUCTIONS:")
+    context_parts.append("- Use multi-pass reasoning: analyze → synthesize → recommend")
     context_parts.append("- BEFORE making ANY specific claims about hardware specs, software versions, or project details:")
     context_parts.append("  1. State which document you're referencing: [Source: filename.md]")
     context_parts.append("  2. If you cannot find the information, explicitly say 'NOT DOCUMENTED IN VAULT'")
     context_parts.append("  3. NEVER guess or make up information - be precise about what exists vs doesn't exist")
-    context_parts.append("- Format responses with clear sections:")
+    context_parts.append("- Structure responses for comprehensive analysis:")
     context_parts.append("  ## From Your Vault:")
-    context_parts.append("  - [Claim]: [Source: filename.md] OR [NOT DOCUMENTED]")
-    context_parts.append("  ## Analysis/Recommendations:")
-    context_parts.append("  [External knowledge and recommendations here]")
-    context_parts.append("- If referencing vault content, quote the exact relevant text")
-    context_parts.append("- Distinguish clearly between documented facts and inferences")
+    context_parts.append("  - [Direct facts and citations]")
+    context_parts.append("  ## Strategic Analysis:")
+    context_parts.append("  - [Cross-document patterns and relationships]")
+    context_parts.append("  - [Gap identification and implications]")  
+    context_parts.append("  ## Recommendations:")
+    context_parts.append("  - [Prioritized action items based on analysis]")
+    context_parts.append("- Think holistically: consider infrastructure dependencies, security, scalability")
+    context_parts.append("- Identify what's missing that should exist based on best practices")
+    context_parts.append("- Be proactive with strategic insights, not just reactive answers")
     context_parts.append("")
     
     # Add the new message

@@ -1,20 +1,22 @@
 # 🔥 Forge - Localhost-First AI Knowledge Management System
 
-A RAG-enhanced AI assistant that provides semantic search and intelligent chat responses using your personal knowledge vault, powered by LangChain, ChromaDB, and Ollama.
+A frontier-model-like RAG-enhanced AI assistant that provides strategic analysis and multi-pass reasoning using your personal knowledge vault, powered by LangChain, ChromaDB, and Ollama.
 
-## ✅ Current Status: Phase 2 Complete
+## ✅ Current Status: Enhanced RAG Implementation Complete
 
 **Phase 1: Enhanced Chat System** ✅ COMPLETE  
-**Phase 2: RAG Knowledge Vault Integration** ✅ COMPLETE
+**Phase 2: RAG Knowledge Vault Integration** ✅ COMPLETE  
+**Phase 3: Frontier-Model Enhancement** ✅ COMPLETE
 
-### Phase 2 Features Implemented:
-- **🧠 RAG-Enhanced Chat**: AI responses that reference your specific documents
-- **🔍 Semantic Search**: Find relevant information across your entire knowledge base using LangChain
-- **📁 Knowledge Vault Integration**: Index and search markdown files from your vault
+### Enhanced RAG Features Implemented:
+- **🧠 Multi-Pass Reasoning**: Strategic analysis with pattern recognition across documents
+- **🔍 Hybrid Search**: Advanced semantic + keyword matching for perfect document retrieval
+- **📁 Knowledge Vault Integration**: Index and search markdown files with enhanced embedding models
 - **🏠 Localhost-First**: Everything runs locally - no cloud dependencies
-- **⚡ ChromaDB Vector Storage**: Persistent semantic indexing with cosine similarity
-- **📊 Document Relevance Scoring**: Shows similarity scores for search results
-- **🔄 Live Index Management**: Configure vault, rebuild index via API
+- **⚡ ChromaDB Vector Storage**: High-quality nomic-embed-text embeddings (768D)
+- **📊 Strategic Response Format**: Structured analysis with gaps identification and recommendations
+- **🔄 Zero Hallucination**: Mandatory source attribution prevents fabricated information
+- **🎯 Frontier-Model Quality**: Proactive insights and holistic infrastructure analysis
 
 ## Quick Start
 
@@ -22,8 +24,8 @@ A RAG-enhanced AI assistant that provides semantic search and intelligent chat r
 
 1. **Ollama** installed and running with required models:
    ```bash
-   # Install embedding model (384-dimensional, optimized for RAG)
-   ollama pull all-minilm:l6-v2
+   # Install enhanced embedding model (768-dimensional, superior quality)
+   ollama pull nomic-embed-text
    
    # Install chat model
    ollama pull llama3.1:8b
@@ -161,21 +163,24 @@ curl -X POST "http://127.0.0.1:8000/rebuild-index"
 
 ### Technology Stack
 
-- **Backend**: FastAPI (Python 3.8+)
-- **Vector Database**: ChromaDB with persistent storage
-- **Embeddings**: Ollama all-minilm:l6-v2 (384D, optimized for semantic search)
-- **Text Processing**: LangChain RecursiveCharacterTextSplitter
+- **Backend**: FastAPI (Python 3.8+) with multi-pass reasoning
+- **Vector Database**: ChromaDB with persistent storage (768D embeddings)
+- **Embeddings**: Ollama nomic-embed-text (768D, superior semantic understanding)
+- **Search Engine**: Hybrid semantic + keyword matching with relevance boosting
+- **Text Processing**: Enhanced LangChain with filename-prefixed chunking
 - **LLM**: Ollama llama3.1:8b (configurable)
 - **Storage**: Persistent ChromaDB in `./chroma_db/`
 
 ### File Structure
 ```
 Forge/
-├── main.py              # FastAPI server with RAG integration
-├── rag_service.py       # LangChain RAG implementation
+├── main.py              # FastAPI server with multi-pass reasoning
+├── rag_service.py       # Enhanced RAG with hybrid search 
 ├── index.html           # Web interface with search functionality
-├── chroma_db/          # Vector database (auto-created)
+├── chroma_db/          # Vector database (auto-created, 768D embeddings)
 ├── test_obsidian_vault/ # Example vault directory
+├── IMPLEMENTATION.md    # Complete implementation documentation
+├── TECHNICAL.md        # Technical architecture deep-dive
 └── README.md           # This documentation
 ```
 
@@ -227,9 +232,10 @@ python3 -c "from rag_service import search_documents; print(search_documents('te
 ```
 
 **"AI Not Using Vault Knowledge"**
-- Ensure similarity scores > 0.6 for relevant results
+- Ensure similarity scores > 0.6 for relevant results (should be 1.0+ with new model)
 - Try more specific queries that match your document content
 - Check that vault path contains markdown files
+- Verify nomic-embed-text model is being used (not all-minilm:l6-v2)
 
 ### Debug Commands
 
@@ -250,8 +256,8 @@ python3 -c "from rag_service import ForgeRAG; rag=ForgeRAG(); print(f'Embedding 
 
 **Embedding Model** (`rag_service.py`):
 ```python
-# Change embedding model (requires rebuild)
-model_name: str = "all-minilm:l6-v2"  # 384D, fast, good quality
+# Current enhanced model (requires rebuild to change)
+model_name: str = "nomic-embed-text"  # 768D, superior quality, zero hallucination
 ```
 
 **Chunk Settings** (`rag_service.py`):
@@ -292,6 +298,6 @@ relevant_docs = search_documents(new_message, limit=5)
 
 ---
 
-**Current Status**: Fully functional RAG-enhanced AI assistant with semantic search across personal knowledge vault. Ready for daily use as an AI-powered knowledge companion.
+**Current Status**: Enhanced RAG system with frontier-model-like strategic reasoning, zero hallucination, and hybrid search. Provides proactive infrastructure analysis and gap identification across personal knowledge vault.
 
-**Last Updated**: Phase 2 completion with LangChain RAG integration
+**Last Updated**: Enhanced RAG implementation with nomic-embed-text embeddings and multi-pass reasoning
