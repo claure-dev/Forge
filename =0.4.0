@@ -1,0 +1,184 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting chromadb
+  Downloading chromadb-1.0.20-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (19.8 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 19.8/19.8 MB 33.8 MB/s eta 0:00:00
+Collecting overrides>=7.3.1
+  Downloading overrides-7.7.0-py3-none-any.whl (17 kB)
+Requirement already satisfied: tokenizers>=0.13.2 in /home/adam/.local/lib/python3.10/site-packages (from chromadb) (0.22.0)
+Collecting rich>=10.11.0
+  Downloading rich-14.1.0-py3-none-any.whl (243 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 243.4/243.4 KB 7.4 MB/s eta 0:00:00
+Requirement already satisfied: numpy>=1.22.5 in /home/adam/.local/lib/python3.10/site-packages (from chromadb) (1.24.3)
+Collecting pyyaml>=6.0.0
+  Downloading PyYAML-6.0.2-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (751 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 751.2/751.2 KB 13.0 MB/s eta 0:00:00
+Collecting build>=1.0.3
+  Downloading build-1.3.0-py3-none-any.whl (23 kB)
+Collecting pybase64>=1.4.1
+  Downloading pybase64-1.4.2-cp310-cp310-manylinux1_x86_64.manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_5_x86_64.whl (68 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 68.9/68.9 KB 13.0 MB/s eta 0:00:00
+Collecting pypika>=0.48.9
+  Downloading PyPika-0.48.9.tar.gz (67 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 67.3/67.3 KB 1.5 MB/s eta 0:00:00
+  Installing build dependencies: started
+  Installing build dependencies: finished with status 'done'
+  Getting requirements to build wheel: started
+  Getting requirements to build wheel: finished with status 'done'
+  Preparing metadata (pyproject.toml): started
+  Preparing metadata (pyproject.toml): finished with status 'done'
+Collecting opentelemetry-api>=1.2.0
+  Downloading opentelemetry_api-1.36.0-py3-none-any.whl (65 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 65.6/65.6 KB 1.9 MB/s eta 0:00:00
+Collecting mmh3>=4.0.1
+  Downloading mmh3-5.2.0-cp310-cp310-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (101 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 101.2/101.2 KB 2.2 MB/s eta 0:00:00
+Collecting opentelemetry-sdk>=1.2.0
+  Downloading opentelemetry_sdk-1.36.0-py3-none-any.whl (119 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 120.0/120.0 KB 4.2 MB/s eta 0:00:00
+Collecting typer>=0.9.0
+  Downloading typer-0.17.3-py3-none-any.whl (46 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 46.5/46.5 KB 1.5 MB/s eta 0:00:00
+Collecting onnxruntime>=1.14.1
+  Downloading onnxruntime-1.22.1-cp310-cp310-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl (16.5 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 16.5/16.5 MB 7.4 MB/s eta 0:00:00
+Collecting kubernetes>=28.1.0
+  Downloading kubernetes-33.1.0-py2.py3-none-any.whl (1.9 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 1.9/1.9 MB 8.7 MB/s eta 0:00:00
+Collecting importlib-resources
+  Downloading importlib_resources-6.5.2-py3-none-any.whl (37 kB)
+Requirement already satisfied: tqdm>=4.65.0 in /home/adam/.local/lib/python3.10/site-packages (from chromadb) (4.67.1)
+Collecting tenacity>=8.2.3
+  Downloading tenacity-9.1.2-py3-none-any.whl (28 kB)
+Requirement already satisfied: httpx>=0.27.0 in /home/adam/.local/lib/python3.10/site-packages (from chromadb) (0.28.1)
+Collecting jsonschema>=4.19.0
+  Downloading jsonschema-4.25.1-py3-none-any.whl (90 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 90.0/90.0 KB 2.6 MB/s eta 0:00:00
+Collecting bcrypt>=4.0.1
+  Downloading bcrypt-4.3.0-cp39-abi3-manylinux_2_34_x86_64.whl (284 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 284.2/284.2 KB 5.9 MB/s eta 0:00:00
+Requirement already satisfied: uvicorn[standard]>=0.18.3 in /home/adam/.local/lib/python3.10/site-packages (from chromadb) (0.24.0)
+Collecting posthog<6.0.0,>=2.4.0
+  Downloading posthog-5.4.0-py3-none-any.whl (105 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 105.4/105.4 KB 3.3 MB/s eta 0:00:00
+Requirement already satisfied: pydantic>=1.9 in /home/adam/.local/lib/python3.10/site-packages (from chromadb) (2.11.7)
+Collecting grpcio>=1.58.0
+  Downloading grpcio-1.74.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (6.2 MB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 6.2/6.2 MB 11.9 MB/s eta 0:00:00
+Collecting orjson>=3.9.12
+  Downloading orjson-3.11.3-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (132 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 133.0/133.0 KB 4.0 MB/s eta 0:00:00
+Requirement already satisfied: typing-extensions>=4.5.0 in /home/adam/.local/lib/python3.10/site-packages (from chromadb) (4.15.0)
+Collecting opentelemetry-exporter-otlp-proto-grpc>=1.2.0
+  Downloading opentelemetry_exporter_otlp_proto_grpc-1.36.0-py3-none-any.whl (18 kB)
+Requirement already satisfied: packaging>=19.1 in /usr/lib/python3/dist-packages (from build>=1.0.3->chromadb) (21.3)
+Requirement already satisfied: tomli>=1.1.0 in /home/adam/.local/lib/python3.10/site-packages (from build>=1.0.3->chromadb) (2.2.1)
+Collecting pyproject_hooks
+  Downloading pyproject_hooks-1.2.0-py3-none-any.whl (10 kB)
+Requirement already satisfied: certifi in /usr/lib/python3/dist-packages (from httpx>=0.27.0->chromadb) (2020.6.20)
+Requirement already satisfied: idna in /usr/lib/python3/dist-packages (from httpx>=0.27.0->chromadb) (3.3)
+Requirement already satisfied: httpcore==1.* in /home/adam/.local/lib/python3.10/site-packages (from httpx>=0.27.0->chromadb) (1.0.9)
+Requirement already satisfied: anyio in /home/adam/.local/lib/python3.10/site-packages (from httpx>=0.27.0->chromadb) (3.7.1)
+Requirement already satisfied: h11>=0.16 in /home/adam/.local/lib/python3.10/site-packages (from httpcore==1.*->httpx>=0.27.0->chromadb) (0.16.0)
+Collecting rpds-py>=0.7.1
+  Downloading rpds_py-0.27.1-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (384 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 384.1/384.1 KB 11.3 MB/s eta 0:00:00
+Collecting referencing>=0.28.4
+  Downloading referencing-0.36.2-py3-none-any.whl (26 kB)
+Collecting attrs>=22.2.0
+  Downloading attrs-25.3.0-py3-none-any.whl (63 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 63.8/63.8 KB 2.1 MB/s eta 0:00:00
+Collecting jsonschema-specifications>=2023.03.6
+  Downloading jsonschema_specifications-2025.4.1-py3-none-any.whl (18 kB)
+Collecting python-dateutil>=2.5.3
+  Downloading python_dateutil-2.9.0.post0-py2.py3-none-any.whl (229 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 229.9/229.9 KB 7.8 MB/s eta 0:00:00
+Requirement already satisfied: requests in /home/adam/.local/lib/python3.10/site-packages (from kubernetes>=28.1.0->chromadb) (2.31.0)
+Collecting oauthlib>=3.2.2
+  Downloading oauthlib-3.3.1-py3-none-any.whl (160 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 160.1/160.1 KB 5.0 MB/s eta 0:00:00
+Requirement already satisfied: urllib3>=1.24.2 in /usr/lib/python3/dist-packages (from kubernetes>=28.1.0->chromadb) (1.26.5)
+Collecting durationpy>=0.7
+  Downloading durationpy-0.10-py3-none-any.whl (3.9 kB)
+Requirement already satisfied: six>=1.9.0 in /usr/lib/python3/dist-packages (from kubernetes>=28.1.0->chromadb) (1.16.0)
+Collecting websocket-client!=0.40.0,!=0.41.*,!=0.42.*,>=0.32.0
+  Downloading websocket_client-1.8.0-py3-none-any.whl (58 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 58.8/58.8 KB 1.6 MB/s eta 0:00:00
+Collecting google-auth>=1.0.1
+  Downloading google_auth-2.40.3-py2.py3-none-any.whl (216 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 216.1/216.1 KB 6.6 MB/s eta 0:00:00
+Collecting requests-oauthlib
+  Downloading requests_oauthlib-2.0.0-py2.py3-none-any.whl (24 kB)
+Requirement already satisfied: sympy in /home/adam/.local/lib/python3.10/site-packages (from onnxruntime>=1.14.1->chromadb) (1.14.0)
+Collecting flatbuffers
+  Downloading flatbuffers-25.2.10-py2.py3-none-any.whl (30 kB)
+Requirement already satisfied: protobuf in /usr/lib/python3/dist-packages (from onnxruntime>=1.14.1->chromadb) (3.12.4)
+Collecting coloredlogs
+  Downloading coloredlogs-15.0.1-py2.py3-none-any.whl (46 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 46.0/46.0 KB 477.4 kB/s eta 0:00:00
+Collecting importlib-metadata<8.8.0,>=6.0
+  Downloading importlib_metadata-8.7.0-py3-none-any.whl (27 kB)
+Collecting opentelemetry-proto==1.36.0
+  Downloading opentelemetry_proto-1.36.0-py3-none-any.whl (72 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 72.5/72.5 KB 638.7 kB/s eta 0:00:00
+Collecting googleapis-common-protos~=1.57
+  Downloading googleapis_common_protos-1.70.0-py3-none-any.whl (294 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 294.5/294.5 KB 828.7 kB/s eta 0:00:00
+Collecting opentelemetry-exporter-otlp-proto-common==1.36.0
+  Downloading opentelemetry_exporter_otlp_proto_common-1.36.0-py3-none-any.whl (18 kB)
+Collecting protobuf
+  Downloading protobuf-6.32.0-cp39-abi3-manylinux2014_x86_64.whl (322 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 322.0/322.0 KB 1.1 MB/s eta 0:00:00
+Collecting opentelemetry-semantic-conventions==0.57b0
+  Downloading opentelemetry_semantic_conventions-0.57b0-py3-none-any.whl (201 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 201.6/201.6 KB 1.3 MB/s eta 0:00:00
+Collecting backoff>=1.10.0
+  Downloading backoff-2.2.1-py3-none-any.whl (15 kB)
+Requirement already satisfied: distro>=1.5.0 in /usr/lib/python3/dist-packages (from posthog<6.0.0,>=2.4.0->chromadb) (1.7.0)
+Requirement already satisfied: pydantic-core==2.33.2 in /home/adam/.local/lib/python3.10/site-packages (from pydantic>=1.9->chromadb) (2.33.2)
+Requirement already satisfied: typing-inspection>=0.4.0 in /home/adam/.local/lib/python3.10/site-packages (from pydantic>=1.9->chromadb) (0.4.1)
+Requirement already satisfied: annotated-types>=0.6.0 in /home/adam/.local/lib/python3.10/site-packages (from pydantic>=1.9->chromadb) (0.7.0)
+Collecting markdown-it-py>=2.2.0
+  Downloading markdown_it_py-4.0.0-py3-none-any.whl (87 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 87.3/87.3 KB 1.5 MB/s eta 0:00:00
+Requirement already satisfied: pygments<3.0.0,>=2.13.0 in /home/adam/.local/lib/python3.10/site-packages (from rich>=10.11.0->chromadb) (2.19.2)
+Requirement already satisfied: huggingface-hub<1.0,>=0.16.4 in /home/adam/.local/lib/python3.10/site-packages (from tokenizers>=0.13.2->chromadb) (0.34.4)
+Collecting shellingham>=1.3.0
+  Downloading shellingham-1.5.4-py2.py3-none-any.whl (9.8 kB)
+Requirement already satisfied: click>=8.0.0 in /usr/lib/python3/dist-packages (from typer>=0.9.0->chromadb) (8.0.3)
+Requirement already satisfied: watchfiles>=0.13 in /home/adam/.local/lib/python3.10/site-packages (from uvicorn[standard]>=0.18.3->chromadb) (1.1.0)
+Requirement already satisfied: python-dotenv>=0.13 in /home/adam/.local/lib/python3.10/site-packages (from uvicorn[standard]>=0.18.3->chromadb) (1.1.1)
+Requirement already satisfied: httptools>=0.5.0 in /home/adam/.local/lib/python3.10/site-packages (from uvicorn[standard]>=0.18.3->chromadb) (0.6.4)
+Requirement already satisfied: websockets>=10.4 in /home/adam/.local/lib/python3.10/site-packages (from uvicorn[standard]>=0.18.3->chromadb) (15.0.1)
+Requirement already satisfied: uvloop!=0.15.0,!=0.15.1,>=0.14.0 in /home/adam/.local/lib/python3.10/site-packages (from uvicorn[standard]>=0.18.3->chromadb) (0.21.0)
+Collecting pyasn1-modules>=0.2.1
+  Downloading pyasn1_modules-0.4.2-py3-none-any.whl (181 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 181.3/181.3 KB 1.4 MB/s eta 0:00:00
+Collecting cachetools<6.0,>=2.0.0
+  Downloading cachetools-5.5.2-py3-none-any.whl (10 kB)
+Collecting rsa<5,>=3.1.4
+  Downloading rsa-4.9.1-py3-none-any.whl (34 kB)
+Requirement already satisfied: hf-xet<2.0.0,>=1.1.3 in /home/adam/.local/lib/python3.10/site-packages (from huggingface-hub<1.0,>=0.16.4->tokenizers>=0.13.2->chromadb) (1.1.9)
+Requirement already satisfied: fsspec>=2023.5.0 in /home/adam/.local/lib/python3.10/site-packages (from huggingface-hub<1.0,>=0.16.4->tokenizers>=0.13.2->chromadb) (2025.7.0)
+Requirement already satisfied: filelock in /home/adam/.local/lib/python3.10/site-packages (from huggingface-hub<1.0,>=0.16.4->tokenizers>=0.13.2->chromadb) (3.19.1)
+Collecting zipp>=3.20
+  Downloading zipp-3.23.0-py3-none-any.whl (10 kB)
+Collecting mdurl~=0.1
+  Downloading mdurl-0.1.2-py3-none-any.whl (10.0 kB)
+Requirement already satisfied: charset-normalizer<4,>=2 in /usr/lib/python3/dist-packages (from requests->kubernetes>=28.1.0->chromadb) (2.0.6)
+Requirement already satisfied: exceptiongroup in /home/adam/.local/lib/python3.10/site-packages (from anyio->httpx>=0.27.0->chromadb) (1.3.0)
+Requirement already satisfied: sniffio>=1.1 in /home/adam/.local/lib/python3.10/site-packages (from anyio->httpx>=0.27.0->chromadb) (1.3.1)
+Collecting humanfriendly>=9.1
+  Downloading humanfriendly-10.0-py2.py3-none-any.whl (86 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 86.8/86.8 KB 1.3 MB/s eta 0:00:00
+Requirement already satisfied: mpmath<1.4,>=1.1.0 in /home/adam/.local/lib/python3.10/site-packages (from sympy->onnxruntime>=1.14.1->chromadb) (1.3.0)
+Collecting pyasn1<0.7.0,>=0.6.1
+  Downloading pyasn1-0.6.1-py3-none-any.whl (83 kB)
+     ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 83.1/83.1 KB 1.5 MB/s eta 0:00:00
+Building wheels for collected packages: pypika
+  Building wheel for pypika (pyproject.toml): started
+  Building wheel for pypika (pyproject.toml): finished with status 'done'
+  Created wheel for pypika: filename=PyPika-0.48.9-py2.py3-none-any.whl size=53738 sha256=f97607983694cb4066763572e7c751c29b5c297c3dde3e08e59d4d2a5d87839c
+  Stored in directory: /home/adam/.cache/pip/wheels/e1/26/51/d0bffb3d2fd82256676d7ad3003faea3bd6dddc9577af665f4
+Successfully built pypika
+Installing collected packages: pypika, flatbuffers, durationpy, zipp, websocket-client, tenacity, shellingham, rpds-py, pyyaml, python-dateutil, pyproject_hooks, pybase64, pyasn1, protobuf, overrides, orjson, oauthlib, mmh3, mdurl, importlib-resources, humanfriendly, grpcio, cachetools, bcrypt, backoff, attrs, rsa, requests-oauthlib, referencing, pyasn1-modules, posthog, opentelemetry-proto, markdown-it-py, importlib-metadata, googleapis-common-protos, coloredlogs, build, rich, opentelemetry-exporter-otlp-proto-common, opentelemetry-api, onnxruntime, jsonschema-specifications, google-auth, typer, opentelemetry-semantic-conventions, kubernetes, jsonschema, opentelemetry-sdk, opentelemetry-exporter-otlp-proto-grpc, chromadb
+Successfully installed attrs-25.3.0 backoff-2.2.1 bcrypt-4.3.0 build-1.3.0 cachetools-5.5.2 chromadb-1.0.20 coloredlogs-15.0.1 durationpy-0.10 flatbuffers-25.2.10 google-auth-2.40.3 googleapis-common-protos-1.70.0 grpcio-1.74.0 humanfriendly-10.0 importlib-metadata-8.7.0 importlib-resources-6.5.2 jsonschema-4.25.1 jsonschema-specifications-2025.4.1 kubernetes-33.1.0 markdown-it-py-4.0.0 mdurl-0.1.2 mmh3-5.2.0 oauthlib-3.3.1 onnxruntime-1.22.1 opentelemetry-api-1.36.0 opentelemetry-exporter-otlp-proto-common-1.36.0 opentelemetry-exporter-otlp-proto-grpc-1.36.0 opentelemetry-proto-1.36.0 opentelemetry-sdk-1.36.0 opentelemetry-semantic-conventions-0.57b0 orjson-3.11.3 overrides-7.7.0 posthog-5.4.0 protobuf-6.32.0 pyasn1-0.6.1 pyasn1-modules-0.4.2 pybase64-1.4.2 pypika-0.48.9 pyproject_hooks-1.2.0 python-dateutil-2.9.0.post0 pyyaml-6.0.2 referencing-0.36.2 requests-oauthlib-2.0.0 rich-14.1.0 rpds-py-0.27.1 rsa-4.9.1 shellingham-1.5.4 tenacity-9.1.2 typer-0.17.3 websocket-client-1.8.0 zipp-3.23.0

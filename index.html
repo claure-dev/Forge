@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Forge Local AI</title>
+    <!-- Marked.js for markdown rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js"></script>
+    <!-- Highlight.js for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/styles/github-dark.css">
+    <script src="https://cdn.jsdelivr.net/npm/highlight.js@11.9.0/highlight.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+            background: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 50%, #0a0a0a 100%);
+            color: #e0e0e0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-attachment: fixed;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+            padding: 1.2rem;
+            border-bottom: 1px solid #404040;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .header h1 {
+            background: linear-gradient(135deg, #4a9eff 0%, #00d4ff 50%, #4a9eff 100%);
+            background-size: 200% 200%;
+            animation: gradientShift 3s ease infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            font-size: 1.6rem;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+        }
+
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .model-selector {
+            background: linear-gradient(135deg, #404040 0%, #353535 100%);
+            color: #e0e0e0;
+            border: 1px solid #606060;
+            border-radius: 8px;
+            padding: 0.8rem 1.2rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            min-width: 160px;
+            width: fit-content;
+            position: relative;
+            z-index: 1;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        .model-selector:hover {
+            border-color: #4a9eff;
+            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.2);
+        }
+
+        .model-selector:focus {
+            outline: none;
+            border-color: #4a9eff;
+            box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2);
+        }
+
+        .chat-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1.5rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            scroll-behavior: smooth;
+        }
+
+        .messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .messages::-webkit-scrollbar-track {
+            background: #1a1a1a;
+            border-radius: 4px;
+        }
+
+        .messages::-webkit-scrollbar-thumb {
+            background: linear-gradient(135deg, #404040, #606060);
+            border-radius: 4px;
+        }
+
+        .messages::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(135deg, #606060, #808080);
+        }
+
+        .message {
+            max-width: 75%;
+            padding: 1.2rem 1.4rem;
+            border-radius: 16px;
+            line-height: 1.6;
+            font-size: 0.95rem;
+            animation: messageSlideIn 0.3s ease-out;
+            position: relative;
+            word-wrap: break-word;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        @keyframes messageSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .message.user {
+            background: linear-gradient(135deg, #4a9eff 0%, #357abd 100%);
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+            border-bottom-right-radius: 6px;
+        }
+
+        .message.user::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            right: -8px;
+            width: 0;
+            height: 0;
+            border: 8px solid transparent;
+            border-bottom-color: #357abd;
+            border-left-color: #357abd;
+        }
+
+        .message.ai {
+            background: linear-gradient(135deg, #2d2d2d 0%, #252525 100%);
+            border: 1px solid #404040;
+            align-self: flex-start;
+            border-bottom-left-radius: 6px;
+            position: relative;
+        }
+
+        .message.ai::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: -8px;
+            width: 0;
+            height: 0;
+            border: 8px solid transparent;
+            border-bottom-color: #252525;
+            border-right-color: #252525;
+        }
+
+        /* VS Code-style markdown formatting */
+        .message.ai .markdown-content {
+            white-space: normal;
+            line-height: 1.6;
+        }
+
+        /* Headings with VS Code colors */
+        .message.ai .markdown-content h1 {
+            color: #569cd6;
+            font-size: 1.5em;
+            font-weight: 600;
+            margin: 1em 0 0.5em 0;
+            border-bottom: 2px solid #404040;
+            padding-bottom: 0.3em;
+        }
+
+        .message.ai .markdown-content h2 {
+            color: #4ec9b0;
+            font-size: 1.3em;
+            font-weight: 600;
+            margin: 0.8em 0 0.4em 0;
+            border-bottom: 1px solid #404040;
+            padding-bottom: 0.2em;
+        }
+
+        .message.ai .markdown-content h3 {
+            color: #dcdcaa;
+            font-size: 1.1em;
+            font-weight: 600;
+            margin: 0.6em 0 0.3em 0;
+        }
+
+        .message.ai .markdown-content h4, .message.ai .markdown-content h5, .message.ai .markdown-content h6 {
+            color: #c586c0;
+            font-weight: 600;
+            margin: 0.5em 0 0.2em 0;
+        }
+
+        /* Paragraphs */
+        .message.ai .markdown-content p {
+            margin: 0.6em 0;
+            color: #e0e0e0;
+        }
+
+        .message.ai .markdown-content p:first-child {
+            margin-top: 0;
+        }
+
+        .message.ai .markdown-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        /* Code blocks */
+        .message.ai .markdown-content pre {
+            background: linear-gradient(135deg, #1a1a1a 0%, #0d0d0d 100%);
+            border: 1px solid #404040;
+            border-radius: 8px;
+            padding: 1.2rem;
+            margin: 1em 0;
+            overflow-x: auto;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+        }
+
+        .message.ai .markdown-content pre::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #4a9eff, transparent);
+        }
+
+        /* Inline code */
+        .message.ai .markdown-content code {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+            color: #f92672;
+            padding: 0.15em 0.4em;
+            border-radius: 4px;
+            font-family: 'Fira Code', 'Monaco', 'Menlo', monospace;
+            font-size: 0.85em;
+            border: 1px solid #404040;
+        }
+
+        .message.ai .markdown-content pre code {
+            background: none;
+            color: inherit;
+            padding: 0;
+            border: none;
+            font-size: 0.9em;
+        }
+
+        /* Blockquotes */
+        .message.ai .markdown-content blockquote {
+            border-left: 4px solid #4a9eff;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+            padding: 1rem 1.5rem;
+            margin: 1em 0;
+            border-radius: 0 8px 8px 0;
+            color: #ccc;
+            font-style: italic;
+        }
+
+        /* Lists */
+        .message.ai .markdown-content ul, .message.ai .markdown-content ol {
+            padding-left: 2rem;
+            margin: 0.8em 0;
+        }
+
+        .message.ai .markdown-content li {
+            margin: 0.4em 0;
+            color: #e0e0e0;
+        }
+
+        .message.ai .markdown-content ul li::marker {
+            color: #4a9eff;
+            font-weight: bold;
+        }
+
+        .message.ai .markdown-content ol li::marker {
+            color: #4ec9b0;
+            font-weight: bold;
+        }
+
+        /* Links */
+        .message.ai .markdown-content a {
+            color: #4a9eff;
+            text-decoration: none;
+            border-bottom: 1px solid transparent;
+            transition: all 0.2s ease;
+        }
+
+        .message.ai .markdown-content a:hover {
+            color: #66b3ff;
+            border-bottom-color: #4a9eff;
+        }
+
+        /* Strong/Bold */
+        .message.ai .markdown-content strong, .message.ai .markdown-content b {
+            color: #dcdcaa;
+            font-weight: 700;
+        }
+
+        /* Emphasis/Italic */
+        .message.ai .markdown-content em, .message.ai .markdown-content i {
+            color: #c586c0;
+            font-style: italic;
+        }
+
+        /* Tables */
+        .message.ai .markdown-content table {
+            border-collapse: collapse;
+            margin: 1em 0;
+            width: 100%;
+        }
+
+        .message.ai .markdown-content table th {
+            background: linear-gradient(135deg, #404040 0%, #353535 100%);
+            color: #4a9eff;
+            font-weight: 600;
+            padding: 0.8rem;
+            border: 1px solid #606060;
+            text-align: left;
+        }
+
+        .message.ai .markdown-content table td {
+            padding: 0.6rem 0.8rem;
+            border: 1px solid #404040;
+            background: rgba(42, 42, 42, 0.3);
+        }
+
+        .message.ai .markdown-content table tr:hover td {
+            background: rgba(74, 158, 255, 0.1);
+        }
+
+        /* Horizontal rules */
+        .message.ai .markdown-content hr {
+            border: none;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #404040, transparent);
+            margin: 1.5em 0;
+        }
+
+        .message.error {
+            background: linear-gradient(135deg, #d32f2f 0%, #b71c1c 100%);
+            color: white;
+            align-self: center;
+            text-align: center;
+            max-width: 85%;
+            border-radius: 12px;
+            animation: errorPulse 0.5s ease-out;
+        }
+
+        @keyframes errorPulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(211, 47, 47, 0.4);
+            }
+            50% {
+                transform: scale(1.02);
+                box-shadow: 0 0 0 10px rgba(211, 47, 47, 0);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(211, 47, 47, 0);
+            }
+        }
+
+        .input-container {
+            background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+            padding: 1.2rem;
+            border-top: 1px solid #404040;
+            display: flex;
+            gap: 0.8rem;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .message-input {
+            flex: 1;
+            background: linear-gradient(135deg, #404040 0%, #353535 100%);
+            border: 1px solid #606060;
+            border-radius: 12px;
+            padding: 0.9rem 1.1rem;
+            color: #e0e0e0;
+            font-size: 1rem;
+            font-family: inherit;
+            resize: none;
+            min-height: 56px;
+            max-height: 140px;
+            transition: all 0.2s ease;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        .message-input:focus {
+            outline: none;
+            border-color: #4a9eff;
+            box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+            background: linear-gradient(135deg, #454545 0%, #3a3a3a 100%);
+        }
+
+        .message-input::placeholder {
+            color: #888;
+            transition: color 0.2s ease;
+        }
+
+        .message-input:focus::placeholder {
+            color: #aaa;
+        }
+
+        .send-button {
+            background: linear-gradient(135deg, #4a9eff 0%, #357abd 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            padding: 0.9rem 1.8rem;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(74, 158, 255, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .send-button::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .send-button:hover:not(:disabled) {
+            background: linear-gradient(135deg, #357abd 0%, #2968a3 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(74, 158, 255, 0.4);
+        }
+
+        .send-button:hover:not(:disabled)::before {
+            left: 100%;
+        }
+
+        .send-button:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 8px rgba(74, 158, 255, 0.3);
+        }
+
+        .send-button:disabled {
+            background: linear-gradient(135deg, #666 0%, #555 100%);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .loading {
+            display: none;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.8rem;
+            color: #888;
+            font-style: italic;
+            padding: 1rem 1.2rem;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+            border-radius: 16px 16px 16px 4px;
+            border: 1px solid #404040;
+            margin-left: 0;
+            margin-right: 20%;
+            align-self: flex-start;
+        }
+
+        .loading.show {
+            display: flex;
+            animation: loadingSlideIn 0.3s ease-out;
+        }
+
+        @keyframes loadingSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            align-items: center;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: linear-gradient(135deg, #4a9eff 0%, #357abd 100%);
+            border-radius: 50%;
+            animation: typingBounce 1.4s infinite ease-in-out;
+        }
+
+        .typing-dot:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dot:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typingBounce {
+            0%, 80%, 100% {
+                transform: scale(0.8);
+                opacity: 0.5;
+            }
+            40% {
+                transform: scale(1.2);
+                opacity: 1;
+            }
+        }
+
+        .status {
+            position: fixed;
+            top: 90px;
+            right: 20px;
+            background: linear-gradient(135deg, #2d2d2d 0%, #252525 100%);
+            border: 1px solid #404040;
+            border-radius: 12px;
+            padding: 0.8rem 1.2rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            z-index: 1000;
+        }
+
+        .status.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .status.connected {
+            border-color: #4caf50;
+            color: #4caf50;
+            box-shadow: 0 4px 16px rgba(76, 175, 80, 0.2);
+        }
+
+        .status.error {
+            border-color: #d32f2f;
+            color: #d32f2f;
+            box-shadow: 0 4px 16px rgba(211, 47, 47, 0.2);
+        }
+
+        /* Header Controls */
+        .header-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .vault-button {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.8rem 1.2rem;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+        }
+
+        .vault-button:hover {
+            background: linear-gradient(135deg, #388e3c 0%, #2e7d2e 100%);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        /* Knowledge Vault Sidebar */
+        .vault-sidebar {
+            position: fixed;
+            top: 0;
+            right: -400px;
+            width: 400px;
+            height: 100vh;
+            background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
+            border-left: 1px solid #404040;
+            z-index: 1000;
+            transition: right 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            box-shadow: -2px 0 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .vault-sidebar.open {
+            right: 0;
+        }
+
+        .vault-header {
+            background: linear-gradient(135deg, #353535 0%, #2a2a2a 100%);
+            padding: 1.2rem;
+            border-bottom: 1px solid #404040;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .vault-header h3 {
+            color: #4caf50;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .close-vault {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 1.2rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 4px;
+            transition: all 0.2s ease;
+        }
+
+        .close-vault:hover {
+            color: #e0e0e0;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .vault-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .vault-section {
+            background: linear-gradient(135deg, #353535 0%, #2a2a2a 100%);
+            border: 1px solid #404040;
+            border-radius: 12px;
+            padding: 1.2rem;
+        }
+
+        .vault-section h4 {
+            color: #4a9eff;
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 0.8rem 0;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 0.8rem;
+        }
+
+        .section-header h4 {
+            margin: 0;
+        }
+
+        .refresh-button {
+            background: none;
+            border: 1px solid #606060;
+            color: #888;
+            border-radius: 6px;
+            padding: 0.4rem 0.6rem;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .refresh-button:hover {
+            color: #4a9eff;
+            border-color: #4a9eff;
+        }
+
+        /* Upload Area */
+        .upload-area {
+            border: 2px dashed #606060;
+            border-radius: 8px;
+            padding: 2rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            margin-bottom: 0.8rem;
+        }
+
+        .upload-area:hover {
+            border-color: #4caf50;
+            background: rgba(76, 175, 80, 0.05);
+        }
+
+        .upload-area.dragover {
+            border-color: #4caf50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+
+        .upload-content {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            color: #888;
+        }
+
+        .upload-icon {
+            font-size: 2rem;
+        }
+
+        .upload-text {
+            font-weight: 500;
+        }
+
+        .upload-button {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.8rem 1.2rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .upload-button:hover {
+            background: linear-gradient(135deg, #388e3c 0%, #2e7d2e 100%);
+        }
+
+        /* Search Input */
+        .search-input {
+            width: 100%;
+            background: linear-gradient(135deg, #404040 0%, #353535 100%);
+            border: 1px solid #606060;
+            border-radius: 8px;
+            padding: 0.8rem;
+            color: #e0e0e0;
+            font-size: 0.9rem;
+            margin-bottom: 0.8rem;
+            transition: all 0.2s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: #4a9eff;
+            box-shadow: 0 0 0 3px rgba(74, 158, 255, 0.2);
+        }
+
+        .search-button {
+            background: linear-gradient(135deg, #4a9eff 0%, #357abd 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 0.8rem 1.2rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+        }
+
+        .search-button:hover {
+            background: linear-gradient(135deg, #357abd 0%, #2968a3 100%);
+        }
+
+        /* Documents List */
+        .documents-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .document-item {
+            background: linear-gradient(135deg, #404040 0%, #353535 100%);
+            border: 1px solid #606060;
+            border-radius: 8px;
+            padding: 0.8rem;
+            margin-bottom: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .document-item:hover {
+            border-color: #4a9eff;
+            box-shadow: 0 2px 8px rgba(74, 158, 255, 0.2);
+        }
+
+        .document-title {
+            color: #4a9eff;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 0.4rem;
+        }
+
+        .document-preview {
+            color: #ccc;
+            font-size: 0.8rem;
+            line-height: 1.4;
+            margin-bottom: 0.4rem;
+        }
+
+        .document-meta {
+            color: #888;
+            font-size: 0.7rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .similarity-badge {
+            background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+            color: white;
+            padding: 0.2rem 0.5rem;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .loading-docs {
+            text-align: center;
+            color: #888;
+            font-style: italic;
+            padding: 2rem 0;
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 1rem;
+                flex-direction: column;
+                gap: 1rem;
+                text-align: center;
+            }
+
+            .header h1 {
+                font-size: 1.4rem;
+            }
+
+            .header-controls {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .vault-sidebar {
+                width: 100%;
+                right: -100%;
+            }
+
+            .message {
+                max-width: 90%;
+                padding: 1rem;
+                font-size: 0.9rem;
+            }
+
+            .messages {
+                padding: 1rem;
+                gap: 1rem;
+            }
+
+            .input-container {
+                padding: 1rem;
+                gap: 0.5rem;
+            }
+
+            .send-button {
+                padding: 0.9rem 1.2rem;
+                font-size: 0.9rem;
+            }
+
+            .status {
+                top: 10px;
+                right: 10px;
+                padding: 0.6rem 0.8rem;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔥 Forge Local AI</h1>
+        <div class="header-controls">
+            <button class="vault-button" id="vaultButton">📚 Knowledge Vault</button>
+            <select class="model-selector" id="modelSelect">
+                <option value="llama3.1:8b">llama3.1:8b</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="status" id="status">Checking connection...</div>
+
+    <!-- Knowledge Vault Sidebar -->
+    <div class="vault-sidebar" id="vaultSidebar">
+        <div class="vault-header">
+            <h3>📚 Knowledge Vault</h3>
+            <button class="close-vault" id="closeVault">✕</button>
+        </div>
+        
+        <div class="vault-content">
+            <!-- Upload Section -->
+            <div class="vault-section">
+                <h4>Upload Document</h4>
+                <div class="upload-area" id="uploadArea">
+                    <input type="file" id="fileInput" accept=".md,.txt,.json" style="display: none;">
+                    <div class="upload-content">
+                        <span class="upload-icon">📄</span>
+                        <span class="upload-text">Click to select or drag files here</span>
+                        <small>.md, .txt, .json files</small>
+                    </div>
+                </div>
+                <button class="upload-button" id="uploadButton" style="display: none;">Upload to Vault</button>
+            </div>
+
+            <!-- Search Section -->
+            <div class="vault-section">
+                <h4>Search Documents</h4>
+                <input type="text" class="search-input" id="searchInput" placeholder="Search knowledge vault...">
+                <button class="search-button" id="searchButton">🔍 Search</button>
+            </div>
+
+            <!-- Documents List -->
+            <div class="vault-section">
+                <div class="section-header">
+                    <h4>Documents</h4>
+                    <button class="refresh-button" id="refreshButton">🔄</button>
+                </div>
+                <div class="documents-list" id="documentsList">
+                    <div class="loading-docs">Loading documents...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="chat-container">
+        <div class="messages" id="messages">
+            <div class="message ai">
+                Welcome to Forge Local AI Phase 2! 🚀 I now have persistent memory and can access your Knowledge Vault documents. Click the Knowledge Vault button to upload and browse documents, or just start chatting!
+            </div>
+        </div>
+
+        <div class="input-container">
+            <textarea 
+                class="message-input" 
+                id="messageInput" 
+                placeholder="Type your message here..." 
+                rows="2"
+            ></textarea>
+            <button class="send-button" id="sendButton">Send</button>
+        </div>
+    </div>
+
+    <script>
+        class ForgeChat {
+            constructor() {
+                this.messageInput = document.getElementById('messageInput');
+                this.sendButton = document.getElementById('sendButton');
+                this.messages = document.getElementById('messages');
+                this.modelSelect = document.getElementById('modelSelect');
+                this.status = document.getElementById('status');
+                this.sessionId = null; // Will be generated by backend
+                this.loadingElement = null; // Will be created dynamically
+                
+                // Knowledge Vault elements
+                this.vaultButton = document.getElementById('vaultButton');
+                this.vaultSidebar = document.getElementById('vaultSidebar');
+                this.closeVault = document.getElementById('closeVault');
+                this.uploadArea = document.getElementById('uploadArea');
+                this.fileInput = document.getElementById('fileInput');
+                this.uploadButton = document.getElementById('uploadButton');
+                this.searchInput = document.getElementById('searchInput');
+                this.searchButton = document.getElementById('searchButton');
+                this.documentsList = document.getElementById('documentsList');
+                this.refreshButton = document.getElementById('refreshButton');
+                this.selectedFile = null;
+                
+                this.init();
+            }
+
+            init() {
+                this.bindEvents();
+                this.bindVaultEvents();
+                this.loadModels();
+                this.checkConnection();
+                this.loadDocuments();
+                
+                // Debug: Check if libraries are loaded
+                console.log('marked.js loaded:', typeof marked !== 'undefined');
+                console.log('highlight.js loaded:', typeof hljs !== 'undefined');
+            }
+
+            bindEvents() {
+                this.sendButton.addEventListener('click', () => this.sendMessage());
+                
+                this.messageInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+
+                this.messageInput.addEventListener('input', () => {
+                    this.adjustTextareaHeight();
+                });
+            }
+
+            adjustTextareaHeight() {
+                const textarea = this.messageInput;
+                textarea.style.height = 'auto';
+                textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
+            }
+
+            async checkConnection() {
+                try {
+                    const response = await fetch('/models');
+                    if (response.ok) {
+                        this.showStatus('Connected to Ollama', 'connected');
+                    } else {
+                        this.showStatus('Connection issues', 'error');
+                    }
+                } catch (error) {
+                    this.showStatus('Cannot connect to Ollama', 'error');
+                }
+            }
+
+            showStatus(message, type) {
+                this.status.textContent = message;
+                this.status.className = `status show ${type}`;
+                setTimeout(() => {
+                    this.status.classList.remove('show');
+                }, 3000);
+            }
+
+            async loadModels() {
+                try {
+                    const response = await fetch('/models');
+                    if (response.ok) {
+                        const data = await response.json();
+                        if (data.models && data.models.length > 0) {
+                            this.modelSelect.innerHTML = '';
+                            data.models.forEach(model => {
+                                const option = document.createElement('option');
+                                option.value = model.name;
+                                option.textContent = model.name;
+                                this.modelSelect.appendChild(option);
+                            });
+                            
+                            // Set default to llama3.1:8b if available
+                            const defaultModel = 'llama3.1:8b';
+                            if (data.models.some(m => m.name === defaultModel)) {
+                                this.modelSelect.value = defaultModel;
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to load models:', error);
+                }
+            }
+
+            async sendMessage() {
+                const message = this.messageInput.value.trim();
+                if (!message) return;
+
+                this.addMessage(message, 'user');
+                this.messageInput.value = '';
+                this.adjustTextareaHeight();
+                this.setLoading(true);
+
+                try {
+                    const response = await fetch('/chat', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            message: message,
+                            model: this.modelSelect.value,
+                            session_id: this.sessionId
+                        })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.sessionId = data.session_id; // Store session ID for future messages
+                        this.addMessage(data.response, 'ai');
+                    } else {
+                        const errorData = await response.json();
+                        this.addMessage(`Error: ${errorData.detail}`, 'error');
+                    }
+                } catch (error) {
+                    this.addMessage(`Network error: ${error.message}`, 'error');
+                } finally {
+                    this.setLoading(false);
+                    this.messageInput.focus(); // Auto-focus back to input
+                }
+            }
+
+            addMessage(content, type) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${type}`;
+                
+                if (type === 'ai') {
+                    // Render markdown for AI messages
+                    const markdownContent = document.createElement('div');
+                    markdownContent.className = 'markdown-content';
+                    
+                    // Check if marked is available, otherwise fallback to plain text
+                    if (typeof marked !== 'undefined') {
+                        try {
+                            markdownContent.innerHTML = marked.parse(content);
+                            
+                            // Highlight code blocks
+                            markdownContent.querySelectorAll('pre code').forEach((block) => {
+                                if (typeof hljs !== 'undefined') {
+                                    hljs.highlightElement(block);
+                                }
+                            });
+                        } catch (error) {
+                            console.warn('Markdown parsing failed:', error);
+                            markdownContent.textContent = content;
+                        }
+                    } else {
+                        console.warn('marked.js not loaded, using plain text');
+                        markdownContent.textContent = content;
+                    }
+                    
+                    messageDiv.appendChild(markdownContent);
+                } else {
+                    messageDiv.textContent = content;
+                }
+                
+                this.messages.appendChild(messageDiv);
+                this.messages.scrollTop = this.messages.scrollHeight;
+            }
+
+            setLoading(loading) {
+                this.sendButton.disabled = loading;
+                this.messageInput.disabled = loading;
+                
+                if (loading) {
+                    // Create and add loading indicator at the end of messages
+                    this.loadingElement = document.createElement('div');
+                    this.loadingElement.className = 'loading show';
+                    this.loadingElement.innerHTML = `
+                        <div class="typing-indicator">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                        <span>AI is thinking...</span>
+                    `;
+                    this.messages.appendChild(this.loadingElement);
+                    this.messages.scrollTop = this.messages.scrollHeight;
+                } else {
+                    // Remove loading indicator
+                    if (this.loadingElement) {
+                        this.loadingElement.remove();
+                        this.loadingElement = null;
+                    }
+                }
+            }
+
+            bindVaultEvents() {
+                // Toggle vault sidebar
+                this.vaultButton.addEventListener('click', () => {
+                    this.toggleVault();
+                });
+
+                this.closeVault.addEventListener('click', () => {
+                    this.closeVaultSidebar();
+                });
+
+                // File upload events
+                this.uploadArea.addEventListener('click', () => {
+                    this.fileInput.click();
+                });
+
+                this.uploadArea.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    this.uploadArea.classList.add('dragover');
+                });
+
+                this.uploadArea.addEventListener('dragleave', () => {
+                    this.uploadArea.classList.remove('dragover');
+                });
+
+                this.uploadArea.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    this.uploadArea.classList.remove('dragover');
+                    this.handleFileSelect(e.dataTransfer.files[0]);
+                });
+
+                this.fileInput.addEventListener('change', (e) => {
+                    this.handleFileSelect(e.target.files[0]);
+                });
+
+                this.uploadButton.addEventListener('click', () => {
+                    this.uploadDocument();
+                });
+
+                // Search events
+                this.searchButton.addEventListener('click', () => {
+                    this.searchDocuments();
+                });
+
+                this.searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        this.searchDocuments();
+                    }
+                });
+
+                // Refresh documents
+                this.refreshButton.addEventListener('click', () => {
+                    this.loadDocuments();
+                });
+            }
+
+            toggleVault() {
+                this.vaultSidebar.classList.toggle('open');
+                if (this.vaultSidebar.classList.contains('open')) {
+                    this.loadDocuments();
+                }
+            }
+
+            closeVaultSidebar() {
+                this.vaultSidebar.classList.remove('open');
+            }
+
+            handleFileSelect(file) {
+                if (!file) return;
+
+                // Check file type
+                const allowedTypes = ['.md', '.txt', '.json'];
+                const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+                
+                if (!allowedTypes.includes(fileExt)) {
+                    this.showStatus('Only .md, .txt, and .json files are supported', 'error');
+                    return;
+                }
+
+                this.selectedFile = file;
+                this.uploadArea.querySelector('.upload-text').textContent = `Selected: ${file.name}`;
+                this.uploadButton.style.display = 'block';
+            }
+
+            async uploadDocument() {
+                if (!this.selectedFile) return;
+
+                try {
+                    const content = await this.readFileContent(this.selectedFile);
+                    
+                    const response = await fetch('/upload-document', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            filename: this.selectedFile.name,
+                            content: content,
+                            metadata: {
+                                file_size: this.selectedFile.size,
+                                last_modified: new Date(this.selectedFile.lastModified).toISOString()
+                            }
+                        })
+                    });
+
+                    if (response.ok) {
+                        this.showStatus(`Document "${this.selectedFile.name}" uploaded successfully!`, 'connected');
+                        this.resetUploadArea();
+                        this.loadDocuments();
+                    } else {
+                        const error = await response.json();
+                        this.showStatus(`Upload failed: ${error.detail}`, 'error');
+                    }
+                } catch (error) {
+                    this.showStatus(`Upload error: ${error.message}`, 'error');
+                }
+            }
+
+            readFileContent(file) {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = (e) => resolve(e.target.result);
+                    reader.onerror = (e) => reject(new Error('Failed to read file'));
+                    reader.readAsText(file);
+                });
+            }
+
+            resetUploadArea() {
+                this.selectedFile = null;
+                this.uploadArea.querySelector('.upload-text').textContent = 'Click to select or drag files here';
+                this.uploadButton.style.display = 'none';
+                this.fileInput.value = '';
+            }
+
+            async loadDocuments() {
+                try {
+                    this.documentsList.innerHTML = '<div class="loading-docs">Loading documents...</div>';
+                    
+                    const response = await fetch('/browse-documents');
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.displayDocuments(data.documents);
+                    } else {
+                        this.documentsList.innerHTML = '<div class="loading-docs">Failed to load documents</div>';
+                    }
+                } catch (error) {
+                    this.documentsList.innerHTML = '<div class="loading-docs">Error loading documents</div>';
+                }
+            }
+
+            async searchDocuments() {
+                const query = this.searchInput.value.trim();
+                if (!query) {
+                    this.loadDocuments();
+                    return;
+                }
+
+                try {
+                    this.documentsList.innerHTML = '<div class="loading-docs">Searching...</div>';
+                    
+                    const response = await fetch('/search-documents', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ query: query })
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.displayDocuments(data.documents, true);
+                    } else {
+                        this.documentsList.innerHTML = '<div class="loading-docs">Search failed</div>';
+                    }
+                } catch (error) {
+                    this.documentsList.innerHTML = '<div class="loading-docs">Search error</div>';
+                }
+            }
+
+            displayDocuments(documents, showSimilarity = false) {
+                if (!documents || documents.length === 0) {
+                    this.documentsList.innerHTML = '<div class="loading-docs">No documents found</div>';
+                    return;
+                }
+
+                this.documentsList.innerHTML = '';
+                
+                documents.forEach(doc => {
+                    const docItem = document.createElement('div');
+                    docItem.className = 'document-item';
+                    
+                    docItem.innerHTML = `
+                        <div class="document-title">${doc.filename}</div>
+                        <div class="document-preview">${doc.content}</div>
+                        <div class="document-meta">
+                            <span>Uploaded: ${new Date(doc.metadata.upload_timestamp).toLocaleDateString()}</span>
+                            ${showSimilarity ? `<span class="similarity-badge">${(doc.similarity * 100).toFixed(1)}%</span>` : ''}
+                        </div>
+                    `;
+                    
+                    docItem.addEventListener('click', () => {
+                        this.viewDocument(doc.id);
+                    });
+                    
+                    this.documentsList.appendChild(docItem);
+                });
+            }
+
+            async viewDocument(docId) {
+                try {
+                    const response = await fetch(`/document/${docId}`);
+                    if (response.ok) {
+                        const doc = await response.json();
+                        // For now, just show an alert with the document content
+                        // In a full implementation, you might want to open a modal or new view
+                        alert(`Document: ${doc.filename}\n\nContent:\n${doc.content.substring(0, 500)}${doc.content.length > 500 ? '...' : ''}`);
+                    }
+                } catch (error) {
+                    this.showStatus('Error loading document', 'error');
+                }
+            }
+        }
+
+        // Initialize the chat when DOM is loaded
+        document.addEventListener('DOMContentLoaded', () => {
+            new ForgeChat();
+        });
+    </script>
+</body>
+</html>
