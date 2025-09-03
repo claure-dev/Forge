@@ -1,0 +1,18 @@
+/* MDEditor Dark Theme Overrides - Minimal to avoid breaking visibility */
+.w-md-editor {
+  background-color: #1f2937;
+}
+
+.w-md-editor-text-container > .w-md-editor-text {
+  color: #ffffff;
+}
+
+.w-md-editor-preview {
+  color: #ffffff;
+}
+
+/* Ensure content is visible */
+.w-md-editor-text-input, .w-md-editor-text-container {
+  opacity: 1 !important;
+  visibility: visible !important;
+}
