@@ -51,3 +51,182 @@ code {
 *::-webkit-scrollbar-corner {
   background: rgb(55 65 81 / 0.8);
 }
+
+/* Subtle polish enhancements */
+
+/* Enhanced code blocks with better visual hierarchy */
+pre {
+  border: 1px solid rgb(251 146 60 / 0.15);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.12), inset 0 1px 0 rgb(255 255 255 / 0.02);
+}
+
+/* Smoother button interactions */
+button:not(.unstyled) {
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+button:not(.unstyled):hover {
+  transform: translateY(-0.5px);
+}
+
+button:not(.unstyled):active {
+  transform: translateY(0px);
+}
+
+/* Enhanced table styling for better data presentation */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  background: linear-gradient(145deg, rgb(17 24 39) 0%, rgb(31 41 55) 100%);
+  border: 1px solid rgb(251 146 60 / 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -1px rgb(0 0 0 / 0.06);
+}
+
+table th {
+  background: linear-gradient(90deg, rgb(251 146 60 / 0.1) 0%, rgb(239 68 68 / 0.05) 100%);
+  border-bottom: 1px solid rgb(251 146 60 / 0.3);
+  padding: 12px 16px;
+  font-weight: 600;
+  text-align: left;
+}
+
+table td {
+  padding: 10px 16px;
+  border-bottom: 1px solid rgb(55 65 81 / 0.5);
+}
+
+table tr:hover {
+  background: rgb(251 146 60 / 0.03);
+}
+
+/* Better typography hierarchy */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+/* Subtle link enhancements */
+a {
+  transition: color 0.15s ease-in-out;
+}
+
+/* Enhanced blockquotes */
+blockquote {
+  border-left: 3px solid rgb(251 146 60);
+  background: linear-gradient(90deg, rgb(251 146 60 / 0.05) 0%, transparent 100%);
+  padding: 16px 20px;
+  margin: 16px 0;
+  border-radius: 0 6px 6px 0;
+  position: relative;
+}
+
+blockquote::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: linear-gradient(180deg, rgb(251 146 60) 0%, rgb(239 68 68) 100%);
+  border-radius: 0 2px 2px 0;
+}
+
+/* Subtle focus states */
+*:focus-visible {
+  outline: 2px solid rgb(251 146 60 / 0.6);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* Better selection styling */
+::selection {
+  background: rgb(251 146 60 / 0.3);
+  color: rgb(255 255 255);
+}
+
+/* Subtle animations for interactive elements */
+@keyframes gentle-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.8; }
+}
+
+.animate-gentle-pulse {
+  animation: gentle-pulse 2s ease-in-out infinite;
+}
+
+/* Inset "stamped steel" panel effects */
+.panel-inset, .bg-gray-900, .bg-gray-800 {
+  background: linear-gradient(135deg, rgb(17 24 39) 0%, rgb(31 41 55) 50%, rgb(17 24 39) 100%);
+  box-shadow: 
+    inset 0 1px 0 rgb(255 255 255 / 0.03),
+    inset 0 -1px 0 rgb(0 0 0 / 0.2),
+    inset 1px 0 0 rgb(255 255 255 / 0.02),
+    inset -1px 0 0 rgb(0 0 0 / 0.1);
+  border: 1px solid rgb(55 65 81 / 0.3);
+}
+
+/* Gentle glow effects for active/interactive states */
+.glow-on-hover:hover,
+.glow-on-focus:focus,
+button:not(.unstyled):hover,
+input:focus,
+textarea:focus {
+  box-shadow: 
+    0 0 0 1px rgb(251 146 60 / 0.4),
+    0 0 8px rgb(251 146 60 / 0.2),
+    0 0 16px rgb(251 146 60 / 0.1);
+  transition: box-shadow 0.2s ease-in-out;
+}
+
+/* Active panel states with subtle inner glow */
+.panel-active {
+  background: linear-gradient(135deg, rgb(31 41 55) 0%, rgb(17 24 39) 50%, rgb(31 41 55) 100%);
+  box-shadow: 
+    inset 0 0 12px rgb(251 146 60 / 0.08),
+    inset 0 1px 0 rgb(255 255 255 / 0.05),
+    inset 0 -1px 0 rgb(0 0 0 / 0.3);
+  border: 1px solid rgb(251 146 60 / 0.2);
+}
+
+/* File browser and navigation enhancements */
+.file-item:hover {
+  background: linear-gradient(90deg, rgb(251 146 60 / 0.08) 0%, transparent 100%);
+  box-shadow: inset 2px 0 0 rgb(251 146 60 / 0.6);
+  transition: all 0.15s ease-in-out;
+}
+
+/* Enhanced input fields with stamped steel effect */
+input, textarea, select {
+  background: linear-gradient(135deg, rgb(31 41 55) 0%, rgb(17 24 39) 100%);
+  box-shadow: 
+    inset 0 1px 3px rgb(0 0 0 / 0.3),
+    inset 0 -1px 0 rgb(255 255 255 / 0.02);
+  border: 1px solid rgb(55 65 81 / 0.5);
+  transition: all 0.2s ease-in-out;
+}
+
+/* File browser with stamped steel inset effects */
+.file-browser-sidebar, 
+nav[class*="bg-gray"], 
+aside[class*="bg-gray"] {
+  background: rgb(17 24 39) !important;
+  border-right: 1px solid rgb(251 146 60 / 0.15);
+  box-shadow: 
+    0 1px 3px rgb(0 0 0 / 0.12),
+    inset 0 1px 0 rgb(255 255 255 / 0.02),
+    inset 0 -1px 0 rgb(0 0 0 / 0.2),
+    inset 1px 0 0 rgb(255 255 255 / 0.02),
+    inset -1px 0 0 rgb(0 0 0 / 0.1);
+}
+
+/* Tree folder and file items more refined styling */
+.tree-node, .folder-item, [class*="file-"] {
+  transition: all 0.12s ease-out;
+}
+
+.tree-node:hover, .folder-item:hover {
+  background: linear-gradient(90deg, rgb(251 146 60 / 0.06) 0%, transparent 80%) !important;
+  box-shadow: inset 2px 0 0 rgb(251 146 60 / 0.4);
+}

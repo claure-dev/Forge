@@ -232,7 +232,16 @@ export const FileBrowser: React.FC<FileBrowserProps> = ({ onFileSelect, vaultPat
   };
 
   return (
-    <div className="h-full flex flex-col bg-gradient-to-b from-gray-900 via-gray-900 to-orange-950/20 min-h-0">
+    <div className="h-full flex flex-col bg-gray-900 min-h-0" style={{
+      border: '1px solid rgb(251 146 60 / 0.15)',
+      boxShadow: `
+        0 1px 3px rgb(0 0 0 / 0.12),
+        inset 0 1px 0 rgb(255 255 255 / 0.02),
+        inset 0 -1px 0 rgb(0 0 0 / 0.2),
+        inset 1px 0 0 rgb(255 255 255 / 0.02),
+        inset -1px 0 0 rgb(0 0 0 / 0.1)
+      `
+    }}>
       {/* Header with Forge branding - sparks on steel */}
       <div className="p-4 border-b border-orange-800/30 bg-gradient-to-r from-gray-800 via-orange-950/20 to-gray-800">
         <div className="flex items-center space-x-2 mb-2">

@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { ObsidianStyleEditor } from './ObsidianStyleEditor';
+import { ObsidianEditor } from './ObsidianEditor';
 
 interface EditorProps {
   selectedFile: string | null;
@@ -113,13 +113,13 @@ export const Editor: React.FC<EditorProps> = ({ selectedFile, onFileSelect, onCo
             <span className="text-sm text-orange-200/90 font-medium">{selectedFile.split('/').pop()}</span>
             <div className="flex items-center space-x-2">
               {isModified && <span className="text-xs text-orange-400 animate-pulse">✨</span>}
-              <span className="text-xs text-orange-300/60">Ctrl+S to save • Click any section to edit</span>
+              <span className="text-xs text-orange-300/60">Ctrl+S to save • Click anywhere to edit</span>
             </div>
           </div>
         )}
-        {/* Obsidian-Style Live Preview Editor */}
+        {/* Obsidian-Style Editor */}
         <div className="flex-1 min-h-0 overflow-auto" ref={scrollContainerRef}>
-          <ObsidianStyleEditor
+          <ObsidianEditor
             value={content}
             onChange={handleEditorChange}
             onWikiLinkClick={handleWikiLinkClick}
