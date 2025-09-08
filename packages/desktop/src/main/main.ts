@@ -1,6 +1,12 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
 import { spawn, ChildProcess } from 'child_process';
+import { fileURLToPath } from 'url';
+import { forgeStore } from './store.js';
+
+// ESM equivalent of __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 let mainWindow: BrowserWindow;
 let aiServerProcess: ChildProcess | null = null;
@@ -8,18 +14,33 @@ let aiServerProcess: ChildProcess | null = null;
 const isDev = process.env.NODE_ENV === 'development';
 
 function createWindow(): void {
+  const bounds = forgeStore.getWindowBounds();
+  
   mainWindow = new BrowserWindow({
-    height: 900,
-    width: 1400,
+    x: bounds?.x,
+    y: bounds?.y,
+    width: bounds?.width || 1400,
+    height: bounds?.height || 900,
     webPreferences: {
-      preload: path.join(__dirname, '../main/preload.js'),
+      preload: path.join(__dirname, '../../../src/main/preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
     },
   });
 
+  // Save window bounds when moved or resized
+  mainWindow.on('moved', () => {
+    const bounds = mainWindow.getBounds();
+    forgeStore.setWindowBounds(bounds);
+  });
+
+  mainWindow.on('resized', () => {
+    const bounds = mainWindow.getBounds();
+    forgeStore.setWindowBounds(bounds);
+  });
+
   if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
+    mainWindow.loadURL('http://localhost:5174');
     mainWindow.webContents.openDevTools();
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
@@ -34,7 +55,11 @@ async function startAIServer(): Promise<void> {
     aiServerProcess = spawn(pythonPath, ['main.py'], {
       cwd: serverPath,
       stdio: ['ignore', 'pipe', 'pipe'],
-      env: { ...process.env },
+      env: { 
+        ...process.env, 
+        PATH: process.env.PATH || '/usr/bin:/bin:/usr/local/bin',
+      },
+      shell: true,
     });
 
     aiServerProcess.stdout?.on('data', (data) => {
@@ -75,15 +100,33 @@ function stopAIServer(): void {
 // Vault selection handlers
 ipcMain.handle('select-vault-folder', async () => {
   const { dialog } = await import('electron');
+  const defaultPath = forgeStore.getVaultPath();
   const result = await dialog.showOpenDialog(mainWindow, {
     properties: ['openDirectory'],
     title: 'Select Vault Folder',
+    defaultPath,
   });
   
   if (!result.canceled && result.filePaths.length > 0) {
-    return { success: true, path: result.filePaths[0] };
+    const selectedPath = result.filePaths[0];
+    forgeStore.setVaultPath(selectedPath);
+    return { success: true, path: selectedPath };
   }
   return { success: false };
+});
+
+// Store-related IPC handlers
+ipcMain.handle('get-vault-path', () => {
+  return forgeStore.getVaultPath();
+});
+
+ipcMain.handle('set-vault-path', (event, path: string) => {
+  forgeStore.setVaultPath(path);
+  return { success: true };
+});
+
+ipcMain.handle('get-recent-vaults', () => {
+  return forgeStore.getRecentVaults();
 });
 
 // File system handlers
@@ -167,8 +210,9 @@ ipcMain.handle('server-status', async () => {
 });
 
 app.whenReady().then(async () => {
-  // Temporarily disable AI server to avoid connection spam
-  console.log('Skipping AI server start for now');
+  // TODO: Fix AI server startup issues with Electron security restrictions
+  // For now, AI server should be started manually: cd packages/ai-server && python3 main.py
+  console.log('AI server should be started manually in separate terminal');
   createWindow();
 
   app.on('activate', function () {

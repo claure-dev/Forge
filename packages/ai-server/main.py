@@ -245,6 +245,11 @@ async def chat(chat_message: ChatMessage):
             detail=f"Internal server error: {str(e)}"
         )
 
+@app.get("/health")
+async def health_check():
+    """Health check endpoint"""
+    return {"status": "ok", "message": "AI server is running"}
+
 @app.get("/models")
 async def list_models():
     """List available Ollama models"""
