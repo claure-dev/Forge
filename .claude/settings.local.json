@@ -9,7 +9,17 @@
       "Bash(uvicorn:*)",
       "WebSearch",
       "Bash(ollama pull:*)",
-      "Bash(npm run dev:*)"
+      "Bash(npm run dev:*)",
+      "Bash(npm install:*)",
+      "Bash(npx wait-on:*)",
+      "Bash(npm run:*)",
+      "WebFetch(domain:www.electronjs.org)",
+      "Bash(node:*)",
+      "Bash(find:*)",
+      "Bash(pkill:*)",
+      "Read(//home/adam/Projects/Vault/Logs/Daily/**)",
+      "Bash(lsof:*)",
+      "Read(//home/adam/Projects/Vault/Logs/Weekly/**)"
     ],
     "deny": [],
     "ask": []

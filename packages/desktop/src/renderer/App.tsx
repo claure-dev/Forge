@@ -6,7 +6,7 @@ import { Editor } from './components/Editor';
 const App: React.FC = () => {
   const [serverConnected, setServerConnected] = useState(false);
   const [selectedFile, setSelectedFile] = useState<string | null>(null);
-  const [vaultPath, setVaultPath] = useState<string>('/home/adam/Projects/Forge/tests/fixtures/sample-vault');
+  const [vaultPath, setVaultPath] = useState<string | null>(null);
   const [showVaultSelector, setShowVaultSelector] = useState(false);
   const [fileContent, setFileContent] = useState<string>('');
 
@@ -24,6 +24,26 @@ const App: React.FC = () => {
   const wordCount = selectedFile ? getWordCount(fileContent) : 0;
   const readingTime = selectedFile ? getReadingTime(wordCount) : '';
 
+  // Load vault path on startup
+  useEffect(() => {
+    const loadVaultPath = async () => {
+      try {
+        const storedPath = await window.electronAPI.getVaultPath();
+        if (storedPath) {
+          setVaultPath(storedPath);
+        } else {
+          // No vault configured, show selector
+          setShowVaultSelector(true);
+        }
+      } catch (error) {
+        console.error('Error loading vault path:', error);
+        setShowVaultSelector(true);
+      }
+    };
+
+    loadVaultPath();
+  }, []);
+
   useEffect(() => {
     const checkServerStatus = async () => {
       try {
@@ -40,8 +60,11 @@ const App: React.FC = () => {
   }, []);
 
   const handleSelectVault = async () => {
+    console.log('handleSelectVault called');
+    console.log('window.electronAPI:', window.electronAPI);
     try {
       const result = await window.electronAPI.selectVaultFolder();
+      console.log('selectVaultFolder result:', result);
       if (result.success && result.path) {
         setVaultPath(result.path);
         setSelectedFile(null); // Clear selected file when switching vaults
@@ -51,6 +74,7 @@ const App: React.FC = () => {
       console.error('Error selecting vault:', error);
     }
   };
+
 
   const handleWikiLinkNavigation = async (fileName: string) => {
     console.log('Navigating to wiki link:', fileName);
@@ -83,6 +107,11 @@ const App: React.FC = () => {
       }
     };
 
+    if (!vaultPath) {
+      console.warn('No vault selected for wiki link navigation');
+      return;
+    }
+    
     const foundFilePath = await searchForFile(vaultPath, targetFileName);
     if (foundFilePath) {
       setSelectedFile(foundFilePath);
@@ -97,7 +126,23 @@ const App: React.FC = () => {
     <div className="h-screen flex bg-gradient-to-br from-gray-900 via-gray-900 to-orange-950/30 text-white">
       {/* File Browser */}
       <div className="w-64 bg-gradient-to-b from-gray-800 to-orange-950/20 border-r border-orange-800/30 flex-shrink-0">
-        <FileBrowser onFileSelect={setSelectedFile} vaultPath={vaultPath} selectedFile={selectedFile} />
+        {vaultPath ? (
+          <FileBrowser onFileSelect={setSelectedFile} vaultPath={vaultPath} selectedFile={selectedFile} />
+        ) : (
+          <div className="p-4 text-center text-gray-400">
+            <div className="mb-4">
+              <span className="text-4xl">📁</span>
+            </div>
+            <h3 className="text-lg font-medium mb-2">No Vault Selected</h3>
+            <p className="text-sm mb-4">Choose a folder to start managing your notes</p>
+            <button
+              onClick={handleSelectVault}
+              className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors"
+            >
+              Select Vault Folder
+            </button>
+          </div>
+        )}
       </div>
       
       {/* Main Content */}

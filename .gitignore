@@ -8,8 +8,11 @@ env/
 venv/
 .venv/
 
-# ChromaDB - commented out to track database locally
-# chroma_db/
+# ChromaDB and local data
+chroma_db/
+.vault_config.json
+server.log
+test_server.log
 
 # IDE
 .vscode/

@@ -79,11 +79,38 @@ export const Editor: React.FC<EditorProps> = ({ selectedFile, onFileSelect, onCo
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [selectedFile, isModified, content]);
 
-  const handleEditorChange = (value: string | undefined) => {
+  const handleEditorChange = async (value: string | undefined) => {
     const newContent = value || '';
     setContent(newContent);
     setIsModified(newContent !== originalContent);
     onContentChange?.(newContent);
+  };
+
+  // Separate function to handle auto-save for checkbox toggles
+  const handleCheckboxToggle = async (newContent: string) => {
+    // This function will be called from the ObsidianEditor specifically for checkbox changes
+    setContent(newContent);
+    setIsModified(newContent !== originalContent);
+    onContentChange?.(newContent);
+
+    // Auto-save checkbox toggles immediately
+    console.log('Auto-saving checkbox toggle');
+    setTimeout(async () => {
+      try {
+        if (selectedFile) {
+          const result = await window.electronAPI.writeFile(selectedFile, newContent);
+          if (result.success) {
+            setIsModified(false);
+            setOriginalContent(newContent);
+            console.log('Checkbox toggle saved successfully');
+          } else {
+            console.error('Failed to save checkbox toggle:', result.error);
+          }
+        }
+      } catch (error) {
+        console.error('Error saving checkbox toggle:', error);
+      }
+    }, 100);
   };
 
   const handleWikiLinkClick = (fileName: string) => {
@@ -113,15 +140,16 @@ export const Editor: React.FC<EditorProps> = ({ selectedFile, onFileSelect, onCo
             <span className="text-sm text-orange-200/90 font-medium">{selectedFile.split('/').pop()}</span>
             <div className="flex items-center space-x-2">
               {isModified && <span className="text-xs text-orange-400 animate-pulse">✨</span>}
-              <span className="text-xs text-orange-300/60">Ctrl+S to save • Click anywhere to edit</span>
+              <span className="text-xs text-orange-300/60">Ctrl+S to save • Live Preview (cursor reveals markdown syntax)</span>
             </div>
           </div>
         )}
-        {/* Obsidian-Style Editor */}
-        <div className="flex-1 min-h-0 overflow-auto" ref={scrollContainerRef}>
+        {/* Obsidian Editor - Fixed version */}
+        <div className="flex-1 min-h-0 overflow-hidden" ref={scrollContainerRef}>
           <ObsidianEditor
             value={content}
             onChange={handleEditorChange}
+            onCheckboxToggle={handleCheckboxToggle}
             onWikiLinkClick={handleWikiLinkClick}
           />
         </div>

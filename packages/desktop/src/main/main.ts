@@ -209,6 +209,7 @@ ipcMain.handle('server-status', async () => {
   }
 });
 
+
 app.whenReady().then(async () => {
   // TODO: Fix AI server startup issues with Electron security restrictions
   // For now, AI server should be started manually: cd packages/ai-server && python3 main.py

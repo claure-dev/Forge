@@ -6,19 +6,22 @@ import remarkWikiLink from 'remark-wiki-link';
 interface ObsidianEditorProps {
   value: string;
   onChange: (value: string) => void;
+  onCheckboxToggle?: (value: string) => void;
   onWikiLinkClick?: (linkText: string) => void;
 }
 
-export const ObsidianEditor: React.FC<ObsidianEditorProps> = ({ 
-  value, 
-  onChange, 
-  onWikiLinkClick 
+export const ObsidianEditor: React.FC<ObsidianEditorProps> = ({
+  value,
+  onChange,
+  onCheckboxToggle,
+  onWikiLinkClick
 }) => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editValue, setEditValue] = useState(value);
   const [frontmatterExpanded, setFrontmatterExpanded] = useState(false);
   const [copiedValue, setCopiedValue] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const checkboxCounterRef = useRef(0);
 
   // Update edit value when prop value changes (external file changes)
   useEffect(() => {
@@ -139,8 +142,13 @@ export const ObsidianEditor: React.FC<ObsidianEditorProps> = ({
           </div>
           <div className="flex items-center space-x-4 text-xs text-orange-300/60">
             <span>Ctrl+Enter or Escape to finish • Click anywhere to edit</span>
-            <button
-              onClick={exitEditMode}
+<button
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Done button clicked');
+                exitEditMode();
+              }}
               className="px-3 py-1 bg-orange-600 text-white rounded text-xs hover:bg-orange-500 transition-colors"
             >
               Done
@@ -148,22 +156,23 @@ export const ObsidianEditor: React.FC<ObsidianEditorProps> = ({
           </div>
         </div>
 
-        {/* Full document textarea */}
-        <div className="flex-1 p-6">
-          <div className="max-w-4xl mx-auto">
-            <textarea
-              ref={textareaRef}
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onBlur={exitEditMode}
-              className="w-full bg-gray-800 text-gray-100 p-4 font-mono text-sm rounded resize-none focus:ring-2 focus:ring-orange-500 focus:outline-none transition-colors border border-gray-700"
-              placeholder="Start writing markdown..."
-              style={{ 
-                minHeight: '500px',
-                lineHeight: '1.5'
-              }}
-            />
+        {/* Full document textarea - properly scrollable */}
+        <div className="flex-1 overflow-auto">
+          <div className="p-6">
+            <div className="max-w-4xl mx-auto">
+              <textarea
+                ref={textareaRef}
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                className="w-full h-full bg-gray-800 text-gray-100 p-4 font-mono text-sm rounded resize-none focus:ring-2 focus:ring-orange-500 focus:outline-none transition-colors border border-gray-700"
+                placeholder="Start writing markdown..."
+                style={{ 
+                  minHeight: '70vh',
+                  lineHeight: '1.5'
+                }}
+              />
+            </div>
           </div>
         </div>
       </div>
@@ -172,14 +181,14 @@ export const ObsidianEditor: React.FC<ObsidianEditorProps> = ({
 
   // View mode - rendered markdown
   return (
-    <div className="h-full">
+    <div className="h-full overflow-auto">
       {/* View mode header */}
       <div className="flex items-center justify-between mb-4 pb-2 border-b border-orange-800/30">
         <div className="flex items-center space-x-2">
           <span className="text-sm text-orange-400 font-medium">👁️ View Mode</span>
         </div>
         <div className="flex items-center space-x-4">
-          <span className="text-xs text-orange-300/60">Click anywhere to edit</span>
+<span className="text-xs text-orange-300/60">Double-click text to edit</span>
           <button
             onClick={enterEditMode}
             className="px-3 py-1 bg-gray-700 text-orange-300 rounded text-xs hover:bg-gray-600 transition-colors"
@@ -189,28 +198,15 @@ export const ObsidianEditor: React.FC<ObsidianEditorProps> = ({
         </div>
       </div>
 
-      {/* Rendered markdown - clickable to enter edit mode */}
-      <div
-        onClick={(e) => {
-          // Don't trigger edit mode if clicking on interactive elements
-          const target = e.target as HTMLElement;
-          const isInteractive = target.tagName === 'INPUT' || 
-                               target.tagName === 'A' || 
-                               target.tagName === 'BUTTON' ||
-                               target.closest('input') || 
-                               target.closest('a') ||
-                               target.closest('button');
-          
-          if (!isInteractive) {
-            enterEditMode();
-          }
-        }}
-        className="cursor-text hover:bg-orange-950/10 transition-colors rounded p-6"
-      >
+      {/* Rendered markdown - no more full-document hover */}
+      <div className="p-6">
         <div className="max-w-4xl mx-auto">
           {(() => {
+            // Reset checkbox counter for each render
+            checkboxCounterRef.current = 0;
+
             const { data: frontmatterData, content: contentToRender } = parseFrontmatter(value);
-            
+
             return (
               <>
                 {/* Render frontmatter if present */}
@@ -308,29 +304,76 @@ export const ObsidianEditor: React.FC<ObsidianEditorProps> = ({
               }]
             ]}
             components={{
-              // Interactive task checkboxes
-              input: ({ checked, type, ...props }) => {
-                if (type === 'checkbox') {
+              // Interactive task checkboxes - handle list items with task-list-item class
+              li: ({ children, className, ...props }) => {
+                if (className?.includes('task-list-item')) {
+                  // Track which checkbox this is by incrementing counter
+                  const currentCheckboxIndex = checkboxCounterRef.current++;
+
+                  // Find the checkbox element in children
+                  const checkbox = React.Children.toArray(children).find((child) =>
+                    React.isValidElement(child) && child.type === 'input' && child.props.type === 'checkbox'
+                  ) as React.ReactElement;
+
+                  const isChecked = checkbox?.props?.checked || false;
+
+                  // Get the text content (everything after the checkbox)
+                  const textContent = React.Children.toArray(children).filter((child) =>
+                    !(React.isValidElement(child) && child.type === 'input')
+                  );
+
                   return (
-                    <input
-                      type="checkbox"
-                      checked={checked}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        
-                        // Find the checkbox in the raw markdown and toggle it
-                        const newValue = value.replace(
-                          checked ? /\[x\]/g : /\[ \]/g,
-                          checked ? '[ ]' : '[x]'
-                        );
-                        onChange(newValue);
-                      }}
-                      className="mr-2 w-4 h-4 text-orange-600 bg-gray-800 border-gray-600 rounded focus:ring-orange-600 focus:ring-2 cursor-pointer"
-                      {...props}
-                    />
+                    <li className={className} style={{ listStyle: 'none' }} {...props}>
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={async (e) => {
+                          e.stopPropagation();
+
+                          // Reset counter for this render cycle
+                          let checkboxIndex = 0;
+
+                          // Split content into lines and find all checkbox patterns
+                          const lines = value.split('\n');
+                          let targetLineIndex = -1;
+
+                          for (let lineIndex = 0; lineIndex < lines.length; lineIndex++) {
+                            const line = lines[lineIndex];
+                            const checkboxMatch = line.match(/- \[([ x])\]/);
+
+                            if (checkboxMatch) {
+                              if (checkboxIndex === currentCheckboxIndex) {
+                                targetLineIndex = lineIndex;
+                                break;
+                              }
+                              checkboxIndex++;
+                            }
+                          }
+
+                          // Toggle the specific checkbox
+                          if (targetLineIndex !== -1) {
+                            const newLines = [...lines];
+                            newLines[targetLineIndex] = newLines[targetLineIndex].replace(
+                              /- \[([ x])\]/,
+                              `- [${isChecked ? ' ' : 'x'}]`
+                            );
+                            const newContent = newLines.join('\n');
+
+                            // Use the specialized checkbox toggle handler if available
+                            if (onCheckboxToggle) {
+                              onCheckboxToggle(newContent);
+                            } else {
+                              onChange(newContent);
+                            }
+                          }
+                        }}
+                        className="mr-2 w-4 h-4 text-orange-600 bg-gray-800 border-gray-600 rounded focus:ring-orange-600 focus:ring-2 cursor-pointer"
+                      />
+                      {textContent}
+                    </li>
                   );
                 }
-                return <input type={type} {...props} />;
+                return <li className={className} {...props}>{children}</li>;
               },
 
               // Code blocks
@@ -379,21 +422,42 @@ export const ObsidianEditor: React.FC<ObsidianEditorProps> = ({
                 </td>
               ),
               
-              // Headings
+              // Headings - clickable for editing
               h1: ({ children, ...props }) => (
-                <h1 className="text-2xl font-bold text-white border-b border-gray-600 pb-2 mt-8 mb-4" {...props}>
+                <h1 
+                  className="text-2xl font-bold text-white border-b border-gray-600 pb-2 mt-8 mb-4 hover:bg-orange-950/10 cursor-pointer rounded px-2 py-1 transition-colors" 
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    enterEditMode();
+                  }}
+                  {...props}
+                >
                   {children}
                 </h1>
               ),
               
               h2: ({ children, ...props }) => (
-                <h2 className="text-xl font-bold text-white border-b border-gray-700 pb-1 mt-6 mb-3" {...props}>
+                <h2 
+                  className="text-xl font-bold text-white border-b border-gray-700 pb-1 mt-6 mb-3 hover:bg-orange-950/10 cursor-pointer rounded px-2 py-1 transition-colors" 
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    enterEditMode();
+                  }}
+                  {...props}
+                >
                   {children}
                 </h2>
               ),
               
               h3: ({ children, ...props }) => (
-                <h3 className="text-lg font-bold text-white mt-5 mb-2" {...props}>
+                <h3 
+                  className="text-lg font-bold text-white mt-5 mb-2 hover:bg-orange-950/10 cursor-pointer rounded px-2 py-1 transition-colors" 
+                  onDoubleClick={(e) => {
+                    e.stopPropagation();
+                    enterEditMode();
+                  }}
+                  {...props}
+                >
                   {children}
                 </h3>
               ),
@@ -440,9 +504,18 @@ export const ObsidianEditor: React.FC<ObsidianEditorProps> = ({
                 </ol>
               ),
               
-              // Paragraphs
+// Paragraphs - clickable for editing
               p: ({ children, ...props }) => (
-                <p className="text-gray-200 mb-4 leading-relaxed" {...props}>
+                <p 
+                  className="text-gray-200 mb-4 leading-relaxed hover:bg-orange-950/10 cursor-pointer rounded px-2 py-1 transition-colors" 
+                  onDoubleClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('Paragraph double-clicked');
+                    enterEditMode();
+                  }}
+                  {...props}
+                >
                   {children}
                 </p>
               ),
