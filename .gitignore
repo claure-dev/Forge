@@ -10,9 +10,20 @@ venv/
 
 # ChromaDB and local data
 chroma_db/
+chroma_db_*/
 .vault_config.json
 server.log
 test_server.log
+
+# Development and debugging files
+debug_*.py
+test_*.py
+analyze_*.py
+*_debug.py
+*_test.py
+
+# Personal development context (user-specific)
+.claude/
 
 # IDE
 .vscode/

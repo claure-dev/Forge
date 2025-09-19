@@ -188,7 +188,7 @@ if vault_path:
 
 class ChatMessage(BaseModel):
     message: str
-    model: str = "llama3.1:8b"
+    model: str = "deepseek-r1:8b"
     session_id: str | None = None
 
 class ChatResponse(BaseModel):
@@ -495,10 +495,22 @@ def build_conversation_context(session_id: str, new_message: str) -> str:
                 from rag_service import search_documents
                 relevant_docs = search_documents(new_message, limit=2)  # Fewer docs for temporal
                 if relevant_docs:
-                    context_parts.append("=== RELATED VAULT DOCUMENTS ===")
+                    context_parts.append("=== RELATED VAULT DOCUMENT CHUNKS ===")
+                    context_parts.append("NOTE: These are CHUNKS of documents found via semantic search, not complete files.")
+                    context_parts.append("")
                     for doc in relevant_docs:
                         similarity_score = f" (relevance: {doc['similarity']:.2f})" if doc.get('similarity') else ""
-                        context_parts.append(f"📄 **{doc['filename']}**{similarity_score}:")
+                        context_parts.append(f"📄 **CHUNK from {doc['filename']}**{similarity_score}:")
+
+                        # Add frontmatter metadata context
+                        metadata = doc.get('metadata', {})
+                        if metadata:
+                            frontmatter_fields = ['type', 'status', 'tags', 'created']
+                            relevant_metadata = {k: v for k, v in metadata.items() if k in frontmatter_fields}
+                            if relevant_metadata:
+                                context_parts.append(f"Metadata: {relevant_metadata}")
+                                context_parts.append("")
+
                         content = doc.get('full_content', doc.get('content', ''))[:300]
                         if len(doc.get('full_content', doc.get('content', ''))) > 300:
                             content += "..."
@@ -592,10 +604,22 @@ def build_conversation_context(session_id: str, new_message: str) -> str:
                                 relevant_docs.append(doc)
 
                 if relevant_docs:
-                    context_parts.append("=== VAULT DOCUMENTS ===")
+                    context_parts.append("=== VAULT DOCUMENT CHUNKS ===")
+                    context_parts.append("NOTE: These are CHUNKS of documents found via semantic search, not complete files.")
+                    context_parts.append("")
                     for doc in relevant_docs:
                         similarity_score = f" (relevance: {doc['similarity']:.2f})" if doc.get('similarity') else ""
-                        context_parts.append(f"📄 **{doc['filename']}**{similarity_score}:")
+                        context_parts.append(f"📄 **CHUNK from {doc['filename']}**{similarity_score}:")
+
+                        # Add frontmatter metadata context
+                        metadata = doc.get('metadata', {})
+                        if metadata:
+                            frontmatter_fields = ['type', 'status', 'tags', 'created', 'project_status', 'operational_status']
+                            relevant_metadata = {k: v for k, v in metadata.items() if k in frontmatter_fields}
+                            if relevant_metadata:
+                                context_parts.append(f"Metadata: {relevant_metadata}")
+                                context_parts.append("")
+
                         content_limit = 1000 if doc.get('similarity', 0) > 0.7 else 600
                         content = doc.get('full_content', doc.get('content', ''))[:content_limit]
                         if len(doc.get('full_content', doc.get('content', ''))) > content_limit:
@@ -624,10 +648,22 @@ def build_conversation_context(session_id: str, new_message: str) -> str:
                 from rag_service import search_documents
                 relevant_docs = search_documents(new_message, limit=3)
                 if relevant_docs:
-                    context_parts.append("=== RELEVANT VAULT DOCUMENTS ===")
+                    context_parts.append("=== RELEVANT VAULT DOCUMENT CHUNKS ===")
+                    context_parts.append("NOTE: These are CHUNKS of documents found via semantic search, not complete files.")
+                    context_parts.append("")
                     for doc in relevant_docs:
                         similarity_score = f" (relevance: {doc['similarity']:.2f})" if doc.get('similarity') else ""
-                        context_parts.append(f"📄 **{doc['filename']}**{similarity_score}:")
+                        context_parts.append(f"📄 **CHUNK from {doc['filename']}**{similarity_score}:")
+
+                        # Add frontmatter metadata context
+                        metadata = doc.get('metadata', {})
+                        if metadata:
+                            frontmatter_fields = ['type', 'status', 'tags', 'created', 'project_status', 'operational_status']
+                            relevant_metadata = {k: v for k, v in metadata.items() if k in frontmatter_fields}
+                            if relevant_metadata:
+                                context_parts.append(f"Metadata: {relevant_metadata}")
+                                context_parts.append("")
+
                         content_limit = 1000 if doc.get('similarity', 0) > 0.7 else 600
                         content = doc.get('full_content', doc.get('content', ''))[:content_limit]
                         if len(doc.get('full_content', doc.get('content', ''))) > content_limit:
@@ -674,28 +710,58 @@ def build_conversation_context(session_id: str, new_message: str) -> str:
         context_parts.append("- Be conversational but precise")
 
     context_parts.append("")
-    # Only add task syntax rules for task-related queries
-    if any(term in new_message.lower() for term in ['task', 'open', 'pending', 'remaining', 'todo', 'complete']):
-        context_parts.append("=== TASK SYNTAX RULES ===")
-        context_parts.append("MARKDOWN CHECKBOX SYNTAX:")
-        context_parts.append("- [ ] = PENDING/OPEN task (empty checkbox)")
-        context_parts.append("- [x] = COMPLETED/DONE task (checked checkbox)")
-        context_parts.append("")
-        context_parts.append("WHEN USER ASKS FOR 'OPEN', 'PENDING', OR 'REMAINING' TASKS:")
-        context_parts.append("- ONLY list lines that start with '- [ ]' (empty checkbox)")
-        context_parts.append("- NEVER suggest lines that start with '- [x]' (completed)")
-        context_parts.append("- Extract the exact text after '- [ ]' from the document")
-        context_parts.append("")
-    else:
-        context_parts.append("=== INVENTORY AND INFORMATION QUERIES ===")
-        context_parts.append("For non-task queries (hardware, projects, inventory, etc.):")
-        context_parts.append("- ONLY use information from the provided vault documents")
-        context_parts.append("- NEVER make up or invent details not found in documents")
-        context_parts.append("- If information is missing, say 'I don't see details about X in your vault'")
-        context_parts.append("- Extract specifications, descriptions, and details from actual document content")
-        context_parts.append("- Always cite sources with [Source: filename.md]")
+    # Enhanced guidance for reasoning models
+    context_parts.append("=== REASONING & ACCURACY GUIDELINES ===")
+    context_parts.append("Think step-by-step and be thorough in your analysis.")
     context_parts.append("")
-    context_parts.append("Always cite specific sources with [Source: filename.md] when referencing vault documents.")
+    context_parts.append("TASK INTERPRETATION:")
+    context_parts.append("- [ ] = OPEN/PENDING task (needs to be done)")
+    context_parts.append("- [x] = COMPLETED task (already finished)")
+    context_parts.append("")
+    context_parts.append("DOCUMENT CHUNK LIMITATIONS:")
+    context_parts.append("• You receive CHUNKS of documents via semantic search, NOT complete documents")
+    context_parts.append("• NEVER claim to have 'the entire document' - you only see relevant chunks")
+    context_parts.append("• If tasks/info aren't in provided chunks, say 'No tasks found in available content'")
+    context_parts.append("• Each 📄 section above is a separate chunk from the document")
+    context_parts.append("")
+    context_parts.append("TASK DETECTION RULES:")
+    context_parts.append("• Tasks are ONLY markdown checkboxes: `- [ ]` (open) and `- [x]` (completed)")
+    context_parts.append("• NEVER infer tasks from goals, decisions, or descriptions")
+    context_parts.append("• If no checkbox tasks visible in chunks, report 'No checkbox tasks found'")
+    context_parts.append("• Only list tasks that literally use `[ ]` or `[x]` syntax")
+    context_parts.append("")
+    context_parts.append("FRONTMATTER CONTEXT:")
+    context_parts.append("• Documents have YAML frontmatter with metadata: type, status, tags, created")
+    context_parts.append("• type: project = may contain task lists for project work")
+    context_parts.append("• type: hardware = operational status, not project tasks")
+    context_parts.append("• type: service = runtime status, not todo items")
+    context_parts.append("• status: active means different things per document type")
+    context_parts.append("")
+    context_parts.append("NATURAL INTERACTION:")
+    context_parts.append("• Interpret user intent thoughtfully - queries may be casual")
+    context_parts.append("• Provide clear, direct answers without unnecessary complexity")
+    context_parts.append("="*50)
+    context_parts.append("")
+
+    # Anti-hallucination instructions
+    context_parts.append("=== ACCURACY & ANTI-HALLUCINATION ===")
+    context_parts.append("- ONLY use information literally present in the provided chunks above")
+    context_parts.append("- NEVER make up tasks, goals, or details not visible in the chunks")
+    context_parts.append("- If you don't see checkbox tasks `[ ]`, DO NOT create or infer them")
+    context_parts.append("- If information is missing, say 'Not found in available content'")
+    context_parts.append("- Always cite sources with [Source: filename.md]")
+    context_parts.append("- When uncertain, explicitly state your limitations")
+    context_parts.append("")
+    context_parts.append("=== CRITICAL: SOURCE ATTRIBUTION ACCURACY ===")
+    context_parts.append("- BEFORE referencing any information, identify which specific section contains it")
+    context_parts.append("- When citing information, specify the exact source where you found it")
+    context_parts.append("- Each 📄 **CHUNK from filename.md** section contains ONLY content from that file")
+    context_parts.append("- Content under '=== RECENT PROJECT ACTIVITY ===' is ONLY from the specified daily note")
+    context_parts.append("- If information appears in multiple sources, you may cite the most relevant one")
+    context_parts.append("- DOUBLE-CHECK your source attribution before making claims about what's in which file")
+    context_parts.append("- If unsure about source, say 'Found in provided content' instead of guessing")
+    context_parts.append("="*50)
+    context_parts.append("")
     context_parts.append("Be helpful and conversational while staying grounded in the provided information.")
     context_parts.append("")
 

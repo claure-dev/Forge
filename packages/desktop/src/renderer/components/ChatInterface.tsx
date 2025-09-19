@@ -15,7 +15,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ serverConnected })
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('llama3.1:8b');
+  const [selectedModel, setSelectedModel] = useState('deepseek-r1:8b');
 
   // Debug: Log whenever selectedModel changes
   useEffect(() => {

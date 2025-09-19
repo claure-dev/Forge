@@ -44,7 +44,7 @@ User Query → Electron IPC → AI Server → Context Builder → Ollama LLM →
 
 ## Technical Notes
 - **Embedding Model**: nomic-embed-text (768D, superior semantic understanding)
-- **LLM**: Llama 3.1:8b via Ollama
+- **LLM**: DeepSeek-R1:8b via Ollama (reasoning model with visible thinking process)
 - **Vector DB**: ChromaDB with persistent storage in `./chroma_db/`
 - **Editor**: React + ReactMarkdown with YAML frontmatter, wiki links, copy-to-clipboard features
 
@@ -73,7 +73,7 @@ User Query → Electron IPC → AI Server → Context Builder → Ollama LLM →
 
 ## Task Understanding
 - **LLM naturally interprets** markdown checkbox syntax: `[x]` vs `[ ]`
-- **No special parsing** - raw markdown content sent to Llama 3.1:8b
+- **No special parsing** - raw markdown content sent to DeepSeek-R1:8b
 - **Task examples found** in daily logs with completion dates: `- [x] Task ✅ 2025-08-26`
 
 ## Development Philosophy

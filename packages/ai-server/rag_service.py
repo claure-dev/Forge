@@ -6,6 +6,8 @@ import os
 from pathlib import Path
 from typing import List, Dict, Any
 import logging
+import yaml
+import re
 
 from langchain_community.document_loaders import DirectoryLoader, TextLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -14,6 +16,58 @@ from langchain_ollama import OllamaEmbeddings
 from langchain.schema import Document
 
 logger = logging.getLogger(__name__)
+
+class YAMLFrontmatterLoader(TextLoader):
+    """Custom loader that parses YAML frontmatter from markdown files"""
+
+    def __init__(self, file_path, encoding=None, autodetect_encoding=False):
+        """Initialize with proper parent constructor call"""
+        super().__init__(file_path, encoding, autodetect_encoding)
+
+    def load(self) -> List[Document]:
+        """Load markdown file and parse YAML frontmatter"""
+        logger.info(f"🔍 YAMLFrontmatterLoader processing: {self.file_path}")
+        with open(self.file_path, encoding=self.encoding) as f:
+            content = f.read()
+
+        # Parse YAML frontmatter
+        frontmatter_data = {}
+        content_without_frontmatter = content
+
+        # Check for YAML frontmatter (--- at start)
+        frontmatter_pattern = r'^---\s*\n(.*?)\n---\s*\n'
+        match = re.match(frontmatter_pattern, content, re.DOTALL)
+
+        if match:
+            try:
+                yaml_content = match.group(1)
+                frontmatter_data = yaml.safe_load(yaml_content) or {}
+                # Remove frontmatter from content
+                content_without_frontmatter = content[match.end():]
+                logger.debug(f"Parsed frontmatter from {self.file_path}: {frontmatter_data}")
+            except yaml.YAMLError as e:
+                logger.warning(f"Failed to parse YAML frontmatter in {self.file_path}: {e}")
+                # Keep original content if YAML parsing fails
+                frontmatter_data = {}
+
+        # Create document with enhanced metadata
+        metadata = {
+            'source': self.file_path,
+        }
+
+        # Convert complex metadata types to strings for ChromaDB compatibility
+        for key, value in frontmatter_data.items():
+            if isinstance(value, (list, dict)):
+                metadata[key] = str(value)
+            elif hasattr(value, 'isoformat'):  # datetime objects
+                metadata[key] = value.isoformat()
+            else:
+                metadata[key] = value
+
+        result_doc = Document(page_content=content_without_frontmatter, metadata=metadata)
+        logger.info(f"✅ YAMLFrontmatterLoader result - Metadata: {list(metadata.keys())}, Content preview: {content_without_frontmatter[:50]}")
+
+        return [result_doc]
 
 class ForgeRAG:
     def __init__(self, persist_directory: str = "./chroma_db", model_name: str = "nomic-embed-text"):
@@ -178,14 +232,21 @@ class ForgeRAG:
                 # Incremental update: Remove deleted files AND existing chunks from files being reprocessed
                 self._clean_deleted_files(directory_path)
 
-            # Load documents
-            loader = DirectoryLoader(
-                directory_path,
-                glob="**/*.md",
-                loader_cls=TextLoader,
-                loader_kwargs={"encoding": "utf-8"}
-            )
-            documents = loader.load()
+            # Load documents with YAML frontmatter parsing (direct approach due to DirectoryLoader issues)
+            documents = []
+            import glob as glob_module
+
+            # Find all markdown files
+            md_files = glob_module.glob(os.path.join(directory_path, "**/*.md"), recursive=True)
+            logger.info(f"Found {len(md_files)} markdown files to process")
+
+            for file_path in md_files:
+                try:
+                    loader = YAMLFrontmatterLoader(file_path, encoding="utf-8")
+                    file_docs = loader.load()
+                    documents.extend(file_docs)
+                except Exception as e:
+                    logger.warning(f"Failed to load {file_path}: {e}")
 
             if not documents:
                 logger.warning(f"No markdown files found in {directory_path}")
@@ -385,6 +446,15 @@ class ForgeRAG:
             is_temporal_query = any(word in query_lower for word in ['when', 'last', 'recent', 'today', 'yesterday', 'week'])
             is_project_query = any(word in query_lower for word in ['project', 'working', 'progress', 'developing'])
 
+            # Detect frontmatter-based queries
+            is_status_query = any(word in query_lower for word in ['active', 'completed', 'planned', 'blocked', 'status'])
+            is_type_query = any(word in query_lower for word in ['type:', 'project', 'service', 'hardware', 'research'])
+            is_tag_query = any(word in query_lower for word in ['tag:', 'tagged', 'ai', 'web', 'network', 'localhost'])
+
+            # Detect task-specific queries
+            is_task_query = any(word in query_lower for word in ['task', 'tasks', 'todo', 'open', 'pending', 'checkbox', '[ ]', '[x]'])
+            has_checkbox_patterns = any(pattern in query_lower for pattern in ['[ ]', '[x]', 'checkbox', 'checklist'])
+
             for doc, score in semantic_results:
                 # Convert cosine distance to similarity
                 semantic_similarity = max(0.0, 1.0 - (score / 2.0))
@@ -425,6 +495,97 @@ class ForgeRAG:
                 # Inventory/Hardware relevance (existing logic enhanced)
                 if boost_inventory and folder_type in ['inventory', 'hardware', 'services']:
                     path_score += 0.2
+
+                # Type-aware frontmatter metadata scoring
+                frontmatter_score = 0.0
+                metadata = doc.metadata
+                doc_type = metadata.get('type', '').lower()
+
+                # Type-based queries (e.g., "project", "service", "hardware")
+                if is_type_query and 'type' in metadata:
+                    type_value = metadata['type'].lower()
+                    for term in query_terms:
+                        if term in type_value:
+                            frontmatter_score += 0.3  # Good boost for type matches
+
+                # Tag-based queries (e.g., "ai projects", "network tools")
+                if is_tag_query and 'tags' in metadata:
+                    tags_value = metadata['tags'].lower()  # Already converted to string
+                    for term in query_terms:
+                        if term in tags_value:
+                            frontmatter_score += 0.2  # Moderate boost for tag matches
+
+                # Type-aware status scoring - prevents hardware/project confusion
+                if is_status_query and 'status' in metadata:
+                    status_value = metadata['status'].lower()
+
+                    # Project-specific status queries
+                    if doc_type == 'project':
+                        if any(term in ['active', 'working', 'progress', 'developing'] for term in query_terms):
+                            if status_value in ['active']:
+                                frontmatter_score += 0.5  # Strong boost for active projects
+                        elif any(term in ['completed', 'done', 'finished'] for term in query_terms):
+                            if status_value in ['done', 'completed']:
+                                frontmatter_score += 0.5
+                        elif any(term in ['planned', 'upcoming', 'todo'] for term in query_terms):
+                            if status_value in ['planned']:
+                                frontmatter_score += 0.4
+
+                    # Hardware-specific status queries
+                    elif doc_type == 'hardware':
+                        if any(term in ['running', 'operational', 'working'] for term in query_terms):
+                            if status_value in ['active']:
+                                frontmatter_score += 0.4  # Hardware operational status
+                        # Don't boost hardware for "active projects" queries
+
+                    # Service-specific status queries
+                    elif doc_type == 'service':
+                        if any(term in ['running', 'operational', 'up'] for term in query_terms):
+                            if status_value in ['active']:
+                                frontmatter_score += 0.4  # Service running status
+
+                    # Research-specific status queries
+                    elif doc_type == 'research':
+                        if 'research-status' in metadata:
+                            research_status = metadata['research-status'].lower()
+                            if any(term in ['active', 'ongoing'] for term in query_terms):
+                                if research_status in ['active']:
+                                    frontmatter_score += 0.4
+                            elif any(term in ['completed', 'done'] for term in query_terms):
+                                if research_status in ['completed']:
+                                    frontmatter_score += 0.4
+
+                # Context-aware project prioritization
+                if is_project_query:
+                    if doc_type == 'project':
+                        frontmatter_score += 0.3  # Strong boost for actual projects
+                        # Additional boost for active projects in project contexts
+                        if metadata.get('status') == 'active':
+                            frontmatter_score += 0.2
+                    elif doc_type in ['research', 'log'] and any(proj_word in content_lower for proj_word in ['project', 'development', 'implementation']):
+                        frontmatter_score += 0.1  # Mild boost for project-related content
+
+                # Hardware-specific query context
+                hardware_query = any(word in query_lower for word in ['hardware', 'device', 'computer', 'server', 'workstation'])
+                if hardware_query and doc_type == 'hardware':
+                    frontmatter_score += 0.3
+
+                # Service-specific query context
+                service_query = any(word in query_lower for word in ['service', 'server', 'application', 'running'])
+                if service_query and doc_type == 'service':
+                    frontmatter_score += 0.3
+
+                # Task-specific content scoring
+                if is_task_query:
+                    # Check if chunk contains actual checkbox tasks
+                    checkbox_count = content_lower.count('- [ ]') + content_lower.count('- [x]')
+                    if checkbox_count > 0:
+                        frontmatter_score += 0.5 + (checkbox_count * 0.1)  # Base boost + per-task bonus
+                        logger.debug(f"Task boost: {checkbox_count} checkboxes found in {source_path}")
+
+                    # Boost project documents for task queries
+                    if doc_type == 'project':
+                        frontmatter_score += 0.2  # Projects more likely to have tasks
 
                 # Recency bias scoring
                 recency_score = 0.0
@@ -471,7 +632,7 @@ class ForgeRAG:
                     logger.debug(f"Could not get file mtime for {source_path}: {e}")
 
                 # Combine all scores (legacy terms will naturally fade via recency weighting)
-                final_similarity = semantic_similarity + keyword_score + path_score + recency_score
+                final_similarity = semantic_similarity + keyword_score + path_score + recency_score + frontmatter_score
 
                 # Enhanced source attribution
                 filename_display = Path(source_path).name
@@ -485,6 +646,7 @@ class ForgeRAG:
                     "keyword_score": keyword_score,
                     "path_score": path_score,
                     "recency_score": recency_score,
+                    "frontmatter_score": frontmatter_score,
                     "metadata": doc.metadata,
                     "full_content": doc.page_content,
                     "citation": f"[Source: {filename_display}]"

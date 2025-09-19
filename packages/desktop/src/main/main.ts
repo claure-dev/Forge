@@ -178,7 +178,7 @@ ipcMain.handle('list-directory', async (event, dirPath: string) => {
 });
 
 // IPC handlers
-ipcMain.handle('ai-query', async (event, query: string, model: string = 'llama3.1:8b') => {
+ipcMain.handle('ai-query', async (event, query: string, model: string = 'deepseek-r1:8b') => {
   console.log(`🔍 Main process received - Query: "${query.substring(0, 30)}...", Model: "${model}"`);
   try {
     const response = await fetch('http://localhost:8000/chat', {
