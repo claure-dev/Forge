@@ -83,6 +83,10 @@ class VaultWatcher(FileSystemEventHandler):
         if filename.startswith('.') or filename.startswith('~') or filename.endswith('.tmp'):
             return
 
+        # Only react to actual file changes (not just opening files to read)
+        if event.event_type not in ['created', 'modified', 'moved', 'deleted']:
+            return
+
         logger.info(f"📁 Vault file event: {event.event_type} - {event.src_path}")
 
         with self.lock:
@@ -299,8 +303,8 @@ def get_context_strategy(query: str) -> dict:
 
     patterns = {
         'temporal': ['when', 'last', 'recent', 'today', 'yesterday', 'week', 'ago', 'since'],
-        'structural': ['vault', 'files', 'structure', 'what do i have', 'how many', 'overview'],
-        'project': ['project', 'working on', 'progress', 'status', 'developing'],
+        'structural': ['vault', 'files', 'structure', 'what do i have', 'how many', 'overview', 'inventory', 'hardware', 'all my', 'list all', 'what are all'],
+        'project': ['project', 'working on', 'progress', 'status', 'developing', 'active project'],
         'specific': ['how to', 'what is', 'explain', 'define', 'meaning']
     }
 
@@ -559,13 +563,40 @@ def build_conversation_context(session_id: str, new_message: str) -> str:
         if rag_instance and vault_path:
             try:
                 from rag_service import search_documents
-                relevant_docs = search_documents(new_message, limit=4)  # More docs for projects
+                # Determine search limit based on query type
+                search_limit = 4  # Default
+                if strategy['primary'] == 'structural':
+                    search_limit = 12  # More comprehensive for inventory/overview queries
+                elif strategy['primary'] == 'project':
+                    search_limit = 8   # More for project queries
+
+                relevant_docs = search_documents(new_message, limit=search_limit)
+
+                # For inventory/structural queries, enhance search but avoid overwhelming context
+                if strategy['primary'] == 'structural' and any(term in new_message.lower() for term in ['hardware', 'inventory', 'all my', 'what do i have']):
+                    # Add one additional targeted search to supplement main results
+                    if 'hardware' in new_message.lower():
+                        additional_docs = search_documents("hardware specs", limit=6)
+                    elif 'service' in new_message.lower():
+                        additional_docs = search_documents("services running", limit=6)
+                    elif 'project' in new_message.lower():
+                        additional_docs = search_documents("project status", limit=6)
+                    else:
+                        additional_docs = []
+
+                    # Only add non-duplicate docs from additional search
+                    if additional_docs and relevant_docs:
+                        seen_files = {doc['filename'] for doc in relevant_docs}
+                        for doc in additional_docs:
+                            if doc['filename'] not in seen_files and len(relevant_docs) < 10:
+                                relevant_docs.append(doc)
+
                 if relevant_docs:
-                    context_parts.append("=== PROJECT-RELATED VAULT DOCUMENTS ===")
+                    context_parts.append("=== VAULT DOCUMENTS ===")
                     for doc in relevant_docs:
                         similarity_score = f" (relevance: {doc['similarity']:.2f})" if doc.get('similarity') else ""
                         context_parts.append(f"📄 **{doc['filename']}**{similarity_score}:")
-                        content_limit = 500 if doc.get('similarity', 0) > 0.7 else 300
+                        content_limit = 1000 if doc.get('similarity', 0) > 0.7 else 600
                         content = doc.get('full_content', doc.get('content', ''))[:content_limit]
                         if len(doc.get('full_content', doc.get('content', ''))) > content_limit:
                             content += "..."
@@ -597,7 +628,7 @@ def build_conversation_context(session_id: str, new_message: str) -> str:
                     for doc in relevant_docs:
                         similarity_score = f" (relevance: {doc['similarity']:.2f})" if doc.get('similarity') else ""
                         context_parts.append(f"📄 **{doc['filename']}**{similarity_score}:")
-                        content_limit = 500 if doc.get('similarity', 0) > 0.7 else 300
+                        content_limit = 1000 if doc.get('similarity', 0) > 0.7 else 600
                         content = doc.get('full_content', doc.get('content', ''))[:content_limit]
                         if len(doc.get('full_content', doc.get('content', ''))) > content_limit:
                             content += "..."
@@ -643,6 +674,27 @@ def build_conversation_context(session_id: str, new_message: str) -> str:
         context_parts.append("- Be conversational but precise")
 
     context_parts.append("")
+    # Only add task syntax rules for task-related queries
+    if any(term in new_message.lower() for term in ['task', 'open', 'pending', 'remaining', 'todo', 'complete']):
+        context_parts.append("=== TASK SYNTAX RULES ===")
+        context_parts.append("MARKDOWN CHECKBOX SYNTAX:")
+        context_parts.append("- [ ] = PENDING/OPEN task (empty checkbox)")
+        context_parts.append("- [x] = COMPLETED/DONE task (checked checkbox)")
+        context_parts.append("")
+        context_parts.append("WHEN USER ASKS FOR 'OPEN', 'PENDING', OR 'REMAINING' TASKS:")
+        context_parts.append("- ONLY list lines that start with '- [ ]' (empty checkbox)")
+        context_parts.append("- NEVER suggest lines that start with '- [x]' (completed)")
+        context_parts.append("- Extract the exact text after '- [ ]' from the document")
+        context_parts.append("")
+    else:
+        context_parts.append("=== INVENTORY AND INFORMATION QUERIES ===")
+        context_parts.append("For non-task queries (hardware, projects, inventory, etc.):")
+        context_parts.append("- ONLY use information from the provided vault documents")
+        context_parts.append("- NEVER make up or invent details not found in documents")
+        context_parts.append("- If information is missing, say 'I don't see details about X in your vault'")
+        context_parts.append("- Extract specifications, descriptions, and details from actual document content")
+        context_parts.append("- Always cite sources with [Source: filename.md]")
+    context_parts.append("")
     context_parts.append("Always cite specific sources with [Source: filename.md] when referencing vault documents.")
     context_parts.append("Be helpful and conversational while staying grounded in the provided information.")
     context_parts.append("")
@@ -665,7 +717,10 @@ async def chat(chat_message: ChatMessage):
     try:
         # Generate session ID if not provided
         session_id = chat_message.session_id or str(uuid.uuid4())
-        
+
+        # Log the model being used
+        logger.info(f"🤖 Using model: {chat_message.model} for query: {chat_message.message[:50]}...")
+
         # Build conversation context
         context_prompt = build_conversation_context(session_id, chat_message.message)
         

@@ -19,7 +19,14 @@
       "Bash(pkill:*)",
       "Read(//home/adam/Projects/Vault/Logs/Daily/**)",
       "Bash(lsof:*)",
-      "Read(//home/adam/Projects/Vault/Logs/Weekly/**)"
+      "Read(//home/adam/Projects/Vault/Logs/Weekly/**)",
+      "Read(//tmp/**)",
+      "Bash(grep:*)",
+      "Read(//home/adam/Projects/Vault/**)",
+      "Read(//home/adam/**)",
+      "Read(//var/log/**)",
+      "Bash(ollama list:*)",
+      "Bash(time curl:*)"
     ],
     "deny": [],
     "ask": []

@@ -20,14 +20,122 @@ class ForgeRAG:
         self.persist_directory = persist_directory
         self.model_name = model_name
         self.embeddings = OllamaEmbeddings(model=model_name)
+        # Use markdown-aware text splitter that keeps sections together
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
             chunk_overlap=200,
             length_function=len,
+            separators=[
+                "\n## ",     # H2 headers - major sections
+                "\n### ",    # H3 headers - subsections
+                "\n\n",      # Double newlines - paragraph breaks
+                "\n",        # Single newlines
+                " ",         # Spaces
+                ""           # Characters
+            ],
+            keep_separator=True,  # Keep section headers with content
         )
         self.vectorstore = None
         self._initialize_vectorstore()
-    
+
+    def _smart_chunk_document(self, document: Document) -> List[Document]:
+        """Smart chunking that keeps task lists and project sections together"""
+        source_path = document.metadata.get('source', '')
+        content = document.page_content
+
+        # For project documents, use special handling
+        if '/Projects/' in source_path and content:
+            chunks = []
+
+            # Split by major sections (## headers)
+            sections = content.split('\n## ')
+
+            for i, section in enumerate(sections):
+                if i > 0:  # Add back the header marker for non-first sections
+                    section = '## ' + section
+
+                # If section is small enough, keep it as one chunk
+                if len(section) <= 1200:
+                    chunk_doc = Document(
+                        page_content=section,
+                        metadata={**document.metadata, 'section': section.split('\n')[0][:50]}
+                    )
+                    chunks.append(chunk_doc)
+                else:
+                    # For large sections, use regular splitting but try to keep task lists together
+                    subsection_chunks = self._split_preserving_tasks(section, document.metadata)
+                    chunks.extend(subsection_chunks)
+
+            return chunks if chunks else [document]
+
+        # For non-project documents, use regular chunking
+        return self.text_splitter.split_documents([document])
+
+    def _split_preserving_tasks(self, content: str, metadata: dict) -> List[Document]:
+        """Split content while trying to preserve task lists"""
+        lines = content.split('\n')
+        chunks = []
+        current_chunk = []
+        current_length = 0
+
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            line_length = len(line) + 1  # +1 for newline
+
+            # If we're at a task list, try to keep it together
+            if line.strip().startswith('- ['):
+                # Find end of task list
+                task_block = [line]
+                task_length = line_length
+                j = i + 1
+
+                while j < len(lines) and (lines[j].strip().startswith('- [') or lines[j].strip() == ''):
+                    task_block.append(lines[j])
+                    task_length += len(lines[j]) + 1
+                    j += 1
+
+                # If task block fits in current chunk, add it
+                if current_length + task_length <= 1000:
+                    current_chunk.extend(task_block)
+                    current_length += task_length
+                    i = j
+                    continue
+                # If current chunk has content, finish it and start new one with tasks
+                elif current_chunk:
+                    chunks.append(Document(
+                        page_content='\n'.join(current_chunk),
+                        metadata=metadata
+                    ))
+                    current_chunk = task_block
+                    current_length = task_length
+                    i = j
+                    continue
+
+            # Regular line handling
+            if current_length + line_length > 1000 and current_chunk:
+                # Finish current chunk
+                chunks.append(Document(
+                    page_content='\n'.join(current_chunk),
+                    metadata=metadata
+                ))
+                current_chunk = [line]
+                current_length = line_length
+            else:
+                current_chunk.append(line)
+                current_length += line_length
+
+            i += 1
+
+        # Add final chunk
+        if current_chunk:
+            chunks.append(Document(
+                page_content='\n'.join(current_chunk),
+                metadata=metadata
+            ))
+
+        return chunks if chunks else [Document(page_content=content, metadata=metadata)]
+
     def _initialize_vectorstore(self):
         """Initialize or load existing Chroma vectorstore"""
         try:
@@ -87,8 +195,11 @@ class ForgeRAG:
             if incremental:
                 self._remove_existing_file_chunks(documents)
 
-            # Split documents into chunks
-            text_chunks = self.text_splitter.split_documents(documents)
+            # Split documents into chunks using smart chunking
+            text_chunks = []
+            for doc in documents:
+                chunks = self._smart_chunk_document(doc)
+                text_chunks.extend(chunks)
 
             # Enhance chunks with filename keywords for better searchability
             enhanced_chunks = []
@@ -470,8 +581,20 @@ class ForgeRAG:
             for doc_info in (inventory_docs + other_docs):
                 filename_lower = doc_info['filename'].lower()
                 # Boost documents where filename contains query terms
-                if any(term.strip() in filename_lower for term in query_lower.split() if len(term.strip()) > 2):
-                    doc_info['similarity'] += 0.3  # Significant boost for filename matches
+                filename_match_score = 0
+                query_terms = [term.strip() for term in query_lower.split() if len(term.strip()) > 2]
+
+                # Strong boost for exact project name matches
+                for term in query_terms:
+                    if term in filename_lower:
+                        filename_match_score += 0.4
+
+                # Extra boost for project documents in /Projects/ directory
+                if '/Projects/' in source_path and filename_match_score > 0:
+                    filename_match_score += 0.3
+
+                if filename_match_score > 0:
+                    doc_info['similarity'] += filename_match_score
                     keyword_boosted.append(doc_info)
                 else:
                     remaining_docs.append(doc_info)

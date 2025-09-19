@@ -178,14 +178,15 @@ ipcMain.handle('list-directory', async (event, dirPath: string) => {
 });
 
 // IPC handlers
-ipcMain.handle('ai-query', async (event, query: string) => {
+ipcMain.handle('ai-query', async (event, query: string, model: string = 'llama3.1:8b') => {
+  console.log(`🔍 Main process received - Query: "${query.substring(0, 30)}...", Model: "${model}"`);
   try {
     const response = await fetch('http://localhost:8000/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ message: query }),
+      body: JSON.stringify({ message: query, model: model, session_id: 'forge-desktop' }),
     });
     
     if (!response.ok) {

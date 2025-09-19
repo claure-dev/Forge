@@ -353,10 +353,22 @@ export const ObsidianEditor: React.FC<ObsidianEditorProps> = ({
                           // Toggle the specific checkbox
                           if (targetLineIndex !== -1) {
                             const newLines = [...lines];
-                            newLines[targetLineIndex] = newLines[targetLineIndex].replace(
-                              /- \[([ x])\]/,
-                              `- [${isChecked ? ' ' : 'x'}]`
-                            );
+                            const line = newLines[targetLineIndex];
+
+                            if (isChecked) {
+                              // Unchecking: remove [x] and any existing checkmark/date
+                              newLines[targetLineIndex] = line
+                                .replace(/- \[x\]/, '- [ ]')
+                                .replace(/\s*✅\s*\d{4}-\d{2}-\d{2}$/, '');
+                            } else {
+                              // Checking: add [x] and checkmark with today's date
+                              const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+                              newLines[targetLineIndex] = line
+                                .replace(/- \[ \]/, '- [x]')
+                                .replace(/\s*✅\s*\d{4}-\d{2}-\d{2}$/, '') // Remove any existing checkmark/date first
+                                + ` ✅ ${today}`;
+                            }
+
                             const newContent = newLines.join('\n');
 
                             // Use the specialized checkbox toggle handler if available

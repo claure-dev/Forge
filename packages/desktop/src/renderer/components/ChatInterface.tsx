@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 
 interface ChatInterfaceProps {
   serverConnected: boolean;
@@ -15,7 +15,26 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ serverConnected })
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [previewMode, setPreviewMode] = useState(false);
+  const [selectedModel, setSelectedModel] = useState('llama3.1:8b');
+
+  // Debug: Log whenever selectedModel changes
+  useEffect(() => {
+    console.log(`🔍 Current selectedModel state: "${selectedModel}"`);
+  }, [selectedModel]);
+
+  const availableModels = [
+    { id: 'llama3.1:8b', name: 'Llama 3.1 8B' },
+    { id: 'qwen2.5-coder:14b', name: 'Qwen2.5-Coder 14B' },
+    { id: 'qwen2.5:14b', name: 'Qwen2.5 14B' },
+    { id: 'qwen2.5:7b', name: 'Qwen2.5 7B' },
+    { id: 'qwen2.5-coder:1.5b', name: 'Qwen2.5-Coder 1.5B' },
+    { id: 'deepseek-r1:14b', name: 'DeepSeek-R1 14B' },
+    { id: 'deepseek-r1:8b', name: 'DeepSeek-R1 8B' },
+    { id: 'deepseek-coder:6.7b', name: 'DeepSeek-Coder 6.7B' },
+    { id: 'mistral:7b-instruct', name: 'Mistral 7B Instruct' },
+    { id: 'mistral:7b', name: 'Mistral 7B' },
+    { id: 'olmo2:13b', name: 'OLMo2 13B' },
+  ];
 
   // Refs for auto-scroll and focus management
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -38,8 +57,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ serverConnected })
     }
   }, [isLoading]);
 
-  const handleSend = async () => {
+  const handleSend = useCallback(async () => {
     if (!input.trim() || !serverConnected || isLoading) return;
+
+    console.log(`🎯 React sending - Query: "${input.trim()}", Selected Model: "${selectedModel}"`);
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -53,8 +74,8 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ serverConnected })
     setIsLoading(true);
 
     try {
-      const response = await window.electronAPI.aiQuery(input.trim());
-      
+      const response = await window.electronAPI.aiQuery(input.trim(), selectedModel);
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         content: response.response || 'No response received',
@@ -75,7 +96,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ serverConnected })
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [input, serverConnected, isLoading, selectedModel, setMessages, setInput, setIsLoading]);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -93,17 +114,33 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ serverConnected })
             <span className="text-orange-400">🤖</span>
             <h2 className="text-lg font-semibold text-orange-200">AI Assistant</h2>
           </div>
-          <button
-            onClick={() => setPreviewMode(!previewMode)}
-            className={`px-3 py-1 text-xs rounded-lg transition-all duration-200 ${
-              previewMode
-                ? 'bg-orange-600 text-white shadow-lg shadow-orange-900/20'
-                : 'bg-gray-700 text-orange-300/70 hover:bg-gray-600 hover:text-orange-300'
-            }`}
-            title="Toggle hammer animation preview"
+          <select
+            value={selectedModel}
+            onChange={(e) => {
+              console.log(`🔄 Model changed from ${selectedModel} to ${e.target.value}`);
+              setSelectedModel(e.target.value);
+            }}
+            className="bg-gray-800 border border-orange-800/30 text-orange-200 text-xs rounded px-2 py-1 focus:outline-none focus:border-orange-600 transition-colors min-w-0"
+            title="Select AI model"
+            style={{
+              backgroundColor: '#1f2937',
+              color: '#fbbf24'
+            }}
           >
-            🔨 {previewMode ? 'Stop' : 'Preview'}
-          </button>
+            {availableModels.map((model) => (
+              <option
+                key={model.id}
+                value={model.id}
+                className="bg-gray-800 text-orange-200"
+                style={{
+                  backgroundColor: '#1f2937',
+                  color: '#fbbf24'
+                }}
+              >
+                {model.name}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -136,7 +173,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ serverConnected })
             </div>
           ))
         )}
-        {(isLoading || previewMode) && (
+        {isLoading && (
           <div className="flex justify-start">
             <div className="bg-gradient-to-r from-gray-800 to-gray-800/80 text-gray-100 p-3 rounded-lg border border-orange-800/20">
               <div className="flex items-center space-x-3">
@@ -153,7 +190,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ serverConnected })
                   </div>
                 </div>
                 <span className="text-sm text-orange-300/90">
-                  {previewMode ? 'Preview mode - testing animation' : 'Forging response...'}
+                  Forging response...
                 </span>
               </div>
             </div>

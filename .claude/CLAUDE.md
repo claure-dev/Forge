@@ -54,6 +54,28 @@ User Query → Electron IPC → AI Server → Context Builder → Ollama LLM →
 - AI always searches documents (may be overkill for simple queries)
 - Multiple background processes during development
 
+## Logs & Debugging
+- **AI Server Logs**: `/home/adam/Projects/Forge/packages/ai-server/server.log` and `test_server.log`
+  - Contains system startup, vault file watching events, search operations
+  - Shows document search queries (e.g., "What projects am I working on?", "Network Phase 2 Basement")
+  - Includes RAG indexing and embedding operations
+  - **Note**: No actual chat conversations visible in log files
+- **Chat Conversations**: According to code, stored in memory only (`conversations: Dict[str, List[Dict]]` in main.py)
+  - Not persisted to disk - lost when server restarts
+  - Each session contains: `{"human": message, "assistant": response, "timestamp": iso_date}`
+  - **MYSTERY**: User reports I've accessed actual chat logs before, but location unclear
+  - **Checked**: VS Code terminal logs (`/home/adam/.config/Code/logs/*/terminal.log`) - all empty
+  - **Checked**: Electron app data (`/home/adam/.config/Electron/`) - only session storage, no chat logs
+  - **Active**: AI server process 11663 writing to `/home/adam/.config/Code/logs/20250918T191336/ptyhost.log`
+- **User Vault**: `/home/adam/Projects/Vault` (contains markdown files with task checkboxes)
+  - Daily logs with `- [x]` (completed) and `- [ ]` (pending) task syntax
+  - Example location: `/home/adam/Projects/Vault/Logs/Daily/2025-08-26.md`
+
+## Task Understanding
+- **LLM naturally interprets** markdown checkbox syntax: `[x]` vs `[ ]`
+- **No special parsing** - raw markdown content sent to Llama 3.1:8b
+- **Task examples found** in daily logs with completion dates: `- [x] Task ✅ 2025-08-26`
+
 ## Development Philosophy
 - **Localhost-first**: No cloud dependencies, everything runs locally
 - **User-centric**: Focus on beautiful UX over technical complexity
