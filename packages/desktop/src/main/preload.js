@@ -4,6 +4,7 @@ console.log('Preload script starting...');
 
 const electronAPI = {
   aiQuery: (query, model) => ipcRenderer.invoke('ai-query', query, model),
+  preloadModel: (model) => ipcRenderer.invoke('preload-model', model),
   serverStatus: () => ipcRenderer.invoke('server-status'),
   readFile: (filePath) => ipcRenderer.invoke('read-file', filePath),
   writeFile: (filePath, content) => ipcRenderer.invoke('write-file', filePath, content),

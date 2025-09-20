@@ -10,6 +10,9 @@
   "scripts": {
     "dev": "concurrently \"npm:dev:renderer\" \"npm:dev:electron\" \"npm:ai-server\"",
     "dev:all": "concurrently \"npm:dev:renderer\" \"npm:dev:electron\" \"npm:ai-server\"",
+    "dev:clean": "pkill -f 'python3 main.py' || true && pkill -f 'npm.*dev' || true && pkill -f 'electron.*main.js' || true && sleep 1",
+    "clean": "npm run dev:clean",
+    "dev:fresh": "./dev-clean.sh",
     "dev:main": "cd packages/desktop && npm run build:main && electron dist/main/main.js",
     "dev:electron": "wait-on tcp:5174 && cd packages/desktop && npm run build:main && NODE_ENV=development electron dist/main/main/main.js",
     "dev:renderer": "cd packages/desktop && npm run dev:renderer",

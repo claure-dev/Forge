@@ -16,6 +16,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ serverConnected })
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState('deepseek-r1:8b');
+  const [isModelLoading, setIsModelLoading] = useState(false);
 
   // Debug: Log whenever selectedModel changes
   useEffect(() => {
@@ -57,8 +58,28 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ serverConnected })
     }
   }, [isLoading]);
 
+  // Preload model when selection changes
+  const handleModelChange = useCallback(async (newModel: string) => {
+    console.log(`🔄 Model changed from ${selectedModel} to ${newModel}`);
+
+    if (newModel === selectedModel) return;
+
+    setSelectedModel(newModel);
+    setIsModelLoading(true);
+
+    try {
+      console.log(`🔄 Preloading model: ${newModel}`);
+      await window.electronAPI.preloadModel(newModel);
+      console.log(`✅ Model ${newModel} preloaded successfully`);
+    } catch (error) {
+      console.error(`❌ Failed to preload model ${newModel}:`, error);
+    } finally {
+      setIsModelLoading(false);
+    }
+  }, [selectedModel]);
+
   const handleSend = useCallback(async () => {
-    if (!input.trim() || !serverConnected || isLoading) return;
+    if (!input.trim() || !serverConnected || isLoading || isModelLoading) return;
 
     console.log(`🎯 React sending - Query: "${input.trim()}", Selected Model: "${selectedModel}"`);
 
@@ -113,15 +134,21 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ serverConnected })
           <div className="flex items-center space-x-2">
             <span className="text-orange-400">🤖</span>
             <h2 className="text-lg font-semibold text-orange-200">AI Assistant</h2>
+            {isModelLoading && (
+              <div className="flex items-center space-x-1">
+                <div className="w-3 h-3 bg-orange-400 rounded-full animate-pulse"></div>
+                <span className="text-orange-300 text-xs">Loading model...</span>
+              </div>
+            )}
           </div>
           <select
             value={selectedModel}
-            onChange={(e) => {
-              console.log(`🔄 Model changed from ${selectedModel} to ${e.target.value}`);
-              setSelectedModel(e.target.value);
-            }}
-            className="bg-gray-800 border border-orange-800/30 text-orange-200 text-xs rounded px-2 py-1 focus:outline-none focus:border-orange-600 transition-colors min-w-0"
-            title="Select AI model"
+            onChange={(e) => handleModelChange(e.target.value)}
+            disabled={isModelLoading}
+            className={`bg-gray-800 border border-orange-800/30 text-orange-200 text-xs rounded px-2 py-1 focus:outline-none focus:border-orange-600 transition-colors min-w-0 ${
+              isModelLoading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            title={isModelLoading ? "Loading model..." : "Select AI model"}
             style={{
               backgroundColor: '#1f2937',
               color: '#fbbf24'
@@ -208,17 +235,17 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ serverConnected })
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={handleKeyPress}
-            placeholder={serverConnected ? "Ask about your notes..." : "AI server disconnected"}
-            disabled={!serverConnected || isLoading}
+            placeholder={serverConnected ? (isModelLoading ? "Loading model..." : "Ask about your notes...") : "AI server disconnected"}
+            disabled={!serverConnected || isLoading || isModelLoading}
             className="flex-1 bg-gray-800 border border-orange-800/30 rounded-lg px-3 py-2 text-white placeholder-orange-300/50 resize-none focus:outline-none focus:border-orange-600 focus:ring-1 focus:ring-orange-600/50 transition-colors"
             rows={2}
           />
           <button
             onClick={handleSend}
-            disabled={!serverConnected || isLoading || !input.trim()}
+            disabled={!serverConnected || isLoading || isModelLoading || !input.trim()}
             className="px-4 py-2 bg-gradient-to-r from-orange-600 to-orange-700 text-white rounded-lg hover:from-orange-500 hover:to-orange-600 disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 shadow-lg shadow-orange-900/20 font-medium"
           >
-            {isLoading ? '...' : 'Send'}
+            {isLoading ? '...' : isModelLoading ? 'Loading...' : 'Send'}
           </button>
         </div>
       </div>

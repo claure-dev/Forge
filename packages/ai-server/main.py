@@ -302,7 +302,7 @@ def get_context_strategy(query: str) -> dict:
     query_lower = query.lower()
 
     patterns = {
-        'temporal': ['when', 'last', 'recent', 'today', 'yesterday', 'week', 'ago', 'since'],
+        'temporal': ['when', 'last', 'recent', 'today', 'yesterday', 'week', 'ago', 'since', 'what did i do', 'what happened', 'january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december', '2024', '2025'],
         'structural': ['vault', 'files', 'structure', 'what do i have', 'how many', 'overview', 'inventory', 'hardware', 'all my', 'list all', 'what are all'],
         'project': ['project', 'working on', 'progress', 'status', 'developing', 'active project'],
         'specific': ['how to', 'what is', 'explain', 'define', 'meaning']
@@ -381,41 +381,147 @@ def get_vault_metadata() -> dict:
         logger.error(f"Error getting vault metadata: {e}")
         return {"error": str(e)}
 
-def get_temporal_context(query: str, strategy: dict) -> list:
+def get_temporal_context(query: str, strategy: dict) -> tuple[list, bool]:
     """Get context focused on temporal/recent activities"""
     context_parts = []
 
     try:
         import os
         import glob
+        import re
         from datetime import datetime, timedelta
 
-        # Get multiple recent daily notes for temporal queries
         daily_path = os.path.join(vault_path, "Logs/Daily") if vault_path else None
-        if daily_path and os.path.exists(daily_path):
-            pattern = os.path.join(daily_path, "*.md")
-            files = sorted(glob.glob(pattern), reverse=True)[:7]  # Last 7 days
+        if not daily_path or not os.path.exists(daily_path):
+            return context_parts, False
 
-            if files:
-                context_parts.append("=== RECENT DAILY ACTIVITY ===")
-                for i, file_path in enumerate(files[:3]):  # Show top 3
-                    filename = os.path.basename(file_path)
-                    try:
-                        with open(file_path, 'r', encoding='utf-8') as f:
-                            content = f.read()
+        # Check if query mentions a week
+        week_match = re.search(r'week\s+of\s+(january|february|march|april|may|june|july|august|september|october|november|december)\s*(\d{1,2})', query.lower())
 
-                        # Extract key info from daily note
-                        preview_length = 400 if i == 0 else 200  # More detail for most recent
-                        preview = content[:preview_length]
-                        if len(content) > preview_length:
-                            preview += "..."
+        # Check if query mentions a specific date
+        date_match = re.search(r'(january|february|march|april|may|june|july|august|september|october|november|december)\s*(\d{1,2})|(\d{4}-\d{2}-\d{2})', query.lower())
+        logger.info(f"🗓️ Date detection for '{query}': week_match={week_match is not None}, date_match={date_match is not None}")
 
-                        context_parts.append(f"📅 {filename}:")
-                        context_parts.append(preview)
+        if week_match:
+            # Weekly query - find the week containing the specified date
+            month_names = {'january': '01', 'february': '02', 'march': '03', 'april': '04', 'may': '05', 'june': '06',
+                          'july': '07', 'august': '08', 'september': '09', 'october': '10', 'november': '11', 'december': '12'}
+
+            month = month_names.get(week_match.group(1).lower())
+            day = week_match.group(2).zfill(2) if week_match.group(2) else None
+            logger.info(f"🗓️ Parsed week query: month={month}, day={day}")
+
+            if month and day:
+                from datetime import datetime, timedelta
+                import calendar
+
+                target_date_str = f"2025-{month}-{day}"
+                target_date = datetime.strptime(target_date_str, "%Y-%m-%d")
+
+                # Calculate ISO week number
+                year, week_num, weekday = target_date.isocalendar()
+                week_id = f"{year}-W{week_num:02d}"
+                logger.info(f"🗓️ Target date {target_date_str} is in {week_id}")
+
+                # Find the Monday of this week
+                monday = target_date - timedelta(days=target_date.weekday())
+                week_dates = [monday + timedelta(days=i) for i in range(7)]
+
+                context_parts.append(f"=== ACTIVITIES DURING WEEK OF {target_date_str} ({week_id}) ===")
+                context_parts.append(f"NOTE: The user is asking about activities during the week containing {target_date_str}.")
+                context_parts.append(f"Week dates: {monday.strftime('%Y-%m-%d')} to {(monday + timedelta(days=6)).strftime('%Y-%m-%d')}")
+                context_parts.append("")
+
+                # Try to find and include the weekly note
+                weekly_path = os.path.join(vault_path, "Logs/Weekly") if vault_path else None
+                if weekly_path and os.path.exists(weekly_path):
+                    weekly_file = os.path.join(weekly_path, f"{week_id}.md")
+                    logger.info(f"🗓️ Looking for weekly file: {weekly_file}, exists={os.path.exists(weekly_file)}")
+
+                    if os.path.exists(weekly_file):
+                        try:
+                            with open(weekly_file, 'r', encoding='utf-8') as f:
+                                weekly_content = f.read()
+                            context_parts.append(f"📊 Weekly summary ({week_id}):")
+                            context_parts.append(weekly_content[:1200])  # Reduced weekly content for efficiency
+                            context_parts.append("")
+                            logger.info(f"🗓️ Added weekly note {week_id}, length={len(weekly_content)}")
+                        except Exception as e:
+                            logger.warning(f"Could not read weekly file {weekly_file}: {e}")
+
+                # Include all daily notes from this week
+                daily_content_found = False
+                for date_obj in week_dates:
+                    daily_file = os.path.join(daily_path, f"{date_obj.strftime('%Y-%m-%d')}.md")
+                    if os.path.exists(daily_file):
+                        try:
+                            with open(daily_file, 'r', encoding='utf-8') as f:
+                                daily_content = f.read()
+                            context_parts.append(f"📅 Daily note from {date_obj.strftime('%Y-%m-%d')}:")
+                            context_parts.append(daily_content[:800])  # Reduced content per day for efficiency
+                            context_parts.append("")
+                            daily_content_found = True
+                            logger.info(f"🗓️ Added daily note {date_obj.strftime('%Y-%m-%d')}, length={len(daily_content)}")
+                        except Exception as e:
+                            logger.warning(f"Could not read daily file {daily_file}: {e}")
+
+                if daily_content_found or os.path.exists(weekly_file):
+                    logger.info(f"🗓️ Returning weekly content for {week_id}")
+                    return context_parts, True  # True = found specific week content
+
+        elif date_match:
+            # Specific date query - try to find that exact date
+            month_names = {'january': '01', 'february': '02', 'march': '03', 'april': '04', 'may': '05', 'june': '06',
+                          'july': '07', 'august': '08', 'september': '09', 'october': '10', 'november': '11', 'december': '12'}
+
+            if date_match.group(1):  # Month name format
+                month = month_names.get(date_match.group(1).lower())
+                day = date_match.group(2).zfill(2) if date_match.group(2) else None
+                logger.info(f"🗓️ Parsed date: month={month}, day={day}")
+                if month and day:
+                    target_date = f"2025-{month}-{day}"
+                    target_file = os.path.join(daily_path, f"{target_date}.md")
+                    logger.info(f"🗓️ Looking for file: {target_file}, exists={os.path.exists(target_file)}")
+
+                    if os.path.exists(target_file):
+                        context_parts.append(f"=== ACTIVITIES ON {target_date} (PAST DATE) ===")
+                        context_parts.append("NOTE: The user is asking about activities that happened on this specific past date.")
                         context_parts.append("")
-                    except Exception as e:
-                        logger.warning(f"Could not read {filename}: {e}")
-                        continue
+                        try:
+                            with open(target_file, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                            context_parts.append(f"📅 Daily note from {target_date}:")
+                            context_parts.append(content[:2000])  # More content for specific dates
+                            context_parts.append("")
+                            logger.info(f"🗓️ Returning specific date content for {target_date}, length={len(content)}")
+                            return context_parts, True  # True = found specific date content
+                        except Exception as e:
+                            logger.warning(f"Could not read {target_file}: {e}")
+
+        # Fall back to recent daily notes
+        pattern = os.path.join(daily_path, "*.md")
+        files = sorted(glob.glob(pattern), reverse=True)[:7]  # Last 7 days
+
+        if files:
+            context_parts.append("=== RECENT DAILY ACTIVITY ===")
+            for i, file_path in enumerate(files[:3]):  # Show top 3
+                filename = os.path.basename(file_path)
+                try:
+                    with open(file_path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+
+                    # Extract key info from daily note
+                    preview_length = 400 if i == 0 else 200  # More detail for most recent
+                    preview = content[:preview_length]
+                    if len(content) > preview_length:
+                        preview += "..."
+
+                    context_parts.append(f"📅 {filename}:")
+                    context_parts.append(preview)
+                    context_parts.append("")
+                except Exception as e:
+                    logger.warning(f"Could not read {filename}: {e}")
+                    continue
 
         # Include weekly notes if available
         weekly_path = os.path.join(vault_path, "Logs/Weekly") if vault_path else None
@@ -449,7 +555,7 @@ def get_temporal_context(query: str, strategy: dict) -> list:
     except Exception as e:
         logger.error(f"Error getting temporal context: {e}")
 
-    return context_parts
+    return context_parts, False  # False = general recent notes, not specific date
 
 def build_conversation_context(session_id: str, new_message: str) -> str:
     """Build smart conversation context based on query type and patterns"""
@@ -484,13 +590,13 @@ def build_conversation_context(session_id: str, new_message: str) -> str:
     # Strategy-based context selection
     if strategy['primary'] == 'temporal':
         # Temporal queries get extensive daily/weekly note context
-        temporal_context = get_temporal_context(new_message, strategy)
+        temporal_context, has_specific_date = get_temporal_context(new_message, strategy)
         if temporal_context:
             context_parts.extend(temporal_context)
             context_parts.append("")
 
-        # Still search documents but with recency bias
-        if rag_instance and vault_path:
+        # Only search documents if we don't have specific date content
+        if not has_specific_date and rag_instance and vault_path:
             try:
                 from rag_service import search_documents
                 relevant_docs = search_documents(new_message, limit=2)  # Fewer docs for temporal
@@ -777,6 +883,38 @@ async def root():
     with open("index.html", "r") as f:
         return HTMLResponse(content=f.read())
 
+@app.post("/preload-model")
+async def preload_model(model_request: dict):
+    """Pre-load a model to avoid delays during chat"""
+    try:
+        model_name = model_request.get("model")
+        if not model_name:
+            return {"error": "Model name required"}
+
+        logger.info(f"🔄 Pre-loading model: {model_name}")
+
+        # Send a minimal request to load the model
+        ollama_response = requests.post(
+            "http://localhost:11434/api/generate",
+            json={
+                "model": model_name,
+                "prompt": "Hello",
+                "stream": False
+            },
+            timeout=60
+        )
+
+        if ollama_response.status_code == 200:
+            logger.info(f"✅ Model {model_name} pre-loaded successfully")
+            return {"status": "success", "message": f"Model {model_name} loaded"}
+        else:
+            logger.error(f"❌ Failed to pre-load model {model_name}: {ollama_response.text}")
+            return {"error": f"Failed to load model: {ollama_response.text}"}
+
+    except Exception as e:
+        logger.error(f"Error pre-loading model: {e}")
+        return {"error": str(e)}
+
 @app.post("/chat", response_model=ChatResponse)
 async def chat(chat_message: ChatMessage):
     """Handle chat messages and communicate with Ollama"""
@@ -789,7 +927,8 @@ async def chat(chat_message: ChatMessage):
 
         # Build conversation context
         context_prompt = build_conversation_context(session_id, chat_message.message)
-        
+        logger.info(f"🎯 Context prompt (first 500 chars): {context_prompt[:500]}...")
+
         # Send request to Ollama
         ollama_response = requests.post(
             "http://localhost:11434/api/generate",
@@ -798,7 +937,7 @@ async def chat(chat_message: ChatMessage):
                 "prompt": context_prompt,
                 "stream": False
             },
-            timeout=60
+            timeout=120
         )
         
         if ollama_response.status_code != 200:

@@ -26,7 +26,10 @@
       "Read(//home/adam/**)",
       "Read(//var/log/**)",
       "Bash(ollama list:*)",
-      "Bash(time curl:*)"
+      "Bash(time curl:*)",
+      "Bash(journalctl:*)",
+      "Read(//usr/share/ollama/**)",
+      "Bash(nvidia-smi:*)"
     ],
     "deny": [],
     "ask": []

@@ -77,7 +77,7 @@ class ForgeRAG:
         # Use markdown-aware text splitter that keeps sections together
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=1000,
-            chunk_overlap=200,
+            chunk_overlap=100,
             length_function=len,
             separators=[
                 "\n## ",     # H2 headers - major sections
@@ -119,6 +119,47 @@ class ForgeRAG:
                     # For large sections, use regular splitting but try to keep task lists together
                     subsection_chunks = self._split_preserving_tasks(section, document.metadata)
                     chunks.extend(subsection_chunks)
+
+            return chunks if chunks else [document]
+
+        # For daily notes, use special section-aware chunking
+        elif '/Daily/' in source_path and content:
+            chunks = []
+
+            # Split by major sections (## headers)
+            sections = content.split('\n## ')
+
+            for i, section in enumerate(sections):
+                if i > 0:  # Add back the header marker for non-first sections
+                    section = '## ' + section
+
+                # Keep important sections together (especially Tactical Context and Capture)
+                section_name = section.split('\n')[0] if section.strip() else ''
+
+                # Prioritize content-rich sections over headers
+                if any(keyword in section_name.lower() for keyword in ['tactical', 'capture', 'accomplishments', 'timeline']):
+                    # Keep these sections intact if reasonable size
+                    if len(section) <= 1500:  # Larger limit for important daily sections
+                        chunk_doc = Document(
+                            page_content=section,
+                            metadata={**document.metadata, 'section': section_name[:50], 'content_type': 'daily_activity'}
+                        )
+                        chunks.append(chunk_doc)
+                    else:
+                        # Split but preserve context
+                        subsection_chunks = self._split_preserving_tasks(section, {**document.metadata, 'content_type': 'daily_activity'})
+                        chunks.extend(subsection_chunks)
+                else:
+                    # Regular chunking for other sections
+                    if len(section) <= 800:
+                        chunk_doc = Document(
+                            page_content=section,
+                            metadata={**document.metadata, 'section': section_name[:50]}
+                        )
+                        chunks.append(chunk_doc)
+                    else:
+                        subsection_chunks = self._split_preserving_tasks(section, document.metadata)
+                        chunks.extend(subsection_chunks)
 
             return chunks if chunks else [document]
 
@@ -586,6 +627,22 @@ class ForgeRAG:
                     # Boost project documents for task queries
                     if doc_type == 'project':
                         frontmatter_score += 0.2  # Projects more likely to have tasks
+
+                # Content richness scoring for daily notes
+                if '/Daily/' in source_path:
+                    # Boost chunks marked as daily_activity (from our chunking)
+                    if metadata.get('content_type') == 'daily_activity':
+                        frontmatter_score += 0.8  # Strong boost for activity content
+
+                    # Additional boost for content-rich sections
+                    content_indicators = ['accomplishments', 'breakthrough', 'completed', 'implemented', 'deployed', 'fixed', 'resolved']
+                    content_richness = sum(1 for indicator in content_indicators if indicator in content_lower)
+                    if content_richness > 0:
+                        frontmatter_score += 0.4 + (content_richness * 0.1)
+
+                    # Penalize very short chunks (likely just headers)
+                    if len(doc.page_content.strip()) < 100:
+                        frontmatter_score -= 0.5  # Reduce score for empty/header-only chunks
 
                 # Recency bias scoring
                 recency_score = 0.0

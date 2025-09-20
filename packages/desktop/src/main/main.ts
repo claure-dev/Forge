@@ -201,6 +201,29 @@ ipcMain.handle('ai-query', async (event, query: string, model: string = 'deepsee
   }
 });
 
+ipcMain.handle('preload-model', async (event, model: string) => {
+  console.log(`🔄 Preloading model: "${model}"`);
+  try {
+    const response = await fetch('http://localhost:8000/preload-model', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ model: model }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Model preload error:', error);
+    throw error;
+  }
+});
+
 ipcMain.handle('server-status', async () => {
   try {
     const response = await fetch('http://localhost:8000/health');
